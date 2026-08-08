@@ -1,7 +1,7 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from 'ws';
-import { getServerEnv } from '../lib/env';
+import { getDatabaseEnv } from '../lib/env';
 import * as schema from './schema';
 
 // Node.js needs an explicit WebSocket implementation for Neon interactive
@@ -17,6 +17,6 @@ export function createDatabaseClient(connectionString: string) {
 let database: ReturnType<typeof createDatabaseClient> | undefined;
 
 export function getDb(): ReturnType<typeof createDatabaseClient> {
-  database ??= createDatabaseClient(getServerEnv().DATABASE_URL);
+  database ??= createDatabaseClient(getDatabaseEnv().DATABASE_URL);
   return database;
 }

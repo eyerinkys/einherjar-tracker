@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 import { sql } from 'drizzle-orm';
 import { createDatabaseClient } from './client';
 import { getSafeDatabaseCheckFailureMessage } from './error-redaction';
-import { getServerEnv } from '../lib/env';
+import { getDatabaseEnv } from '../lib/env';
 import { assertSchemaIntegrity } from './schema-integrity';
 
 config({ path: '.env.local', quiet: true });
@@ -73,7 +73,7 @@ async function checkConnection(connectionName: string, connectionString: string,
 }
 
 async function main() {
-  const env = getServerEnv();
+  const env = getDatabaseEnv();
 
   await checkConnection('Pooled runtime', env.DATABASE_URL, false);
   await checkConnection('Direct migration', env.DIRECT_DATABASE_URL, true);

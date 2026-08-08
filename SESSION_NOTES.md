@@ -50,7 +50,41 @@
 - pnpm rejects unsupported Node majors before installation.
 - pnpm 11 requires an explicit build-script decision for the optional `bufferutil` native addon pulled by `ws`. `pnpm-workspace.yaml` sets it to `false`; `ws` uses its supported JavaScript fallback while required `esbuild` and `unrs-resolver` scripts remain allowed.
 
+## Phase 2 — Better Auth and user isolation
+
+- Implemented Better Auth 1.6.26 with the Drizzle PostgreSQL adapter, explicit trusted origins, production secure cookies, built-in rate limiting, and a permanent two-email server allowlist.
+- Added the official `/api/auth/[...all]` Next.js handler, browser client, existing-style sign-in/sign-up screens, protected server root, optimistic root proxy, authenticated Header identity, and retryable sign-out handling.
+- Moved the unchanged mock-backed tabbed interface into `ApplicationShell`; persistence remains owned by later phases.
+- Added `requireUser()` through authoritative `auth.api.getSession({ headers })`, `UNAUTHENTICATED` and enumeration-safe `NOT_FOUND` errors, `ActionResult<T>`, and owner-plus-record SQL predicate helpers.
+- Split database-only and full application environment parsing so Drizzle Kit and database checks do not require unrelated auth settings.
+- Kept `src/auth.ts` as the Better Auth CLI entrypoint and `src/lib/auth.ts` as the Next.js runtime entrypoint with the `server-only` marker and `nextCookies()` plugin.
+- Better Auth schema regeneration exactly matched `src/db/schema/auth.ts`; Phase 2 requires no migration.
+- Added `server-only@0.0.1` as an explicit runtime boundary dependency.
+
+## Phase 2 verification
+
+- Exact runtime: Node v24.18.0 and pnpm 11.20.0.
+- `pnpm install --frozen-lockfile` - passed.
+- `pnpm test` - 10 files and 42 tests passed; the three opt-in PostgreSQL tests were skipped in the normal run.
+- Disposable Neon branch `br-patient-resonance-azqw4lwn` (`phase-2-auth-isolation-verify`, expires 2026-08-15) - all three live cross-user read/update/delete denial tests passed.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` - passed.
+- `pnpm db:generate` - no schema changes; `pnpm exec drizzle-kit check` - passed.
+- `pnpm db:check` - configured production pooled/direct transactions and schema integrity passed; no production data was changed.
+- Better Auth in-memory endpoint tests cover allowlisted registration, non-allowlisted rejection, sign-in, session retrieval, sign-out, forged cookies, and production `Secure` cookies.
+- Production-build browser verification covered protected redirect, allowlisted registration on the disposable branch, refresh persistence, sign-out, existing-account sign-in, non-allowlisted rejection, keyboard focus, mobile/desktop rendering, console/request health, and forced sign-out failure recovery.
+- Final auth screenshots were captured at 1280x720 and 390x844. The Impeccable detector returned no findings; the independent finish review's two findings (input-boundary contrast and sign-out failure recovery) were fixed, reverified, and received a final Pass.
+- The 2026-08-09 closeout reran the full code and schema gate on Node v24.18.0, reconfirmed pooled/direct production connectivity and schema integrity, and smoke-tested the production build: unauthenticated `/` redirected to `/sign-in`, `/sign-up` rendered, and a non-allowlisted registration returned HTTP 400.
+- The closeout found one root `main` worktree and no linked worktrees to merge or remove. Drizzle generated no changes and the Better Auth schema remained byte-for-byte identical, so no database migration or push was required.
+
+## Phase 2 production activation
+
+- Hosted production auth activation is intentionally not performed. The ignored `.env.local` contains the paired production database URLs plus local-only auth settings.
+- On 2026-08-09, local auth was activated with a freshly generated local secret, `http://localhost:3000` as the base/trusted origin, and the two user-provided allowlisted addresses. No account rows were created by this configuration change; each allowlisted user must still complete sign-up.
+- Before deploying or registering the two real accounts, add a generated `BETTER_AUTH_SECRET`, the canonical `BETTER_AUTH_URL`, exactly two real `BETTER_AUTH_ALLOWED_EMAILS`, and exact localhost/preview/production `BETTER_AUTH_TRUSTED_ORIGINS`.
+- Do not copy the disposable browser-test email addresses or test secret into production configuration.
+
 ## Next handoff
 
-1. Continue with Phase 2 of `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md` from the root `main` checkout.
-2. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
+1. For hosted deployment, configure the four Phase 2 auth environment values with the canonical hosted origins and a separate production secret, then create the two allowed accounts when publication/deployment is explicitly authorized.
+2. Continue with Phase 3 of `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md` from the root `main` checkout.
+3. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
