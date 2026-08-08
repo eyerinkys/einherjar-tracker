@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-dark: #161A20;
+    --bg-surface: #222831;
+    --bg-elevated: #2C323B;
+    --border-subtle: #393E46;
+    --border-carved: #4D5460;
+    
+    --bone-light: #F0E6D6;
+    --bone: #DFD0B8;
+    --stone: #948979;
+    --stone-dark: #635B50;
+
+    --moss-dark: #1A3636;
+    --moss: #40534C;
+    --moss-light: #677D6A;
+    --moss-accent: #8DAA91;
+
+    --gold-runic: #C9A96E;
+
+    --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: var(--font-geist-mono), monospace;
+  }
+
+  body {
+    background-color: var(--bg-dark);
+    color: var(--bone);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--moss-accent) !important;
+    outline-offset: 3px;
+  }
+}
+
+/* Custom Utilities for Runic & Industrial Ledger Aesthetic */
+.rune-panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.rune-panel-carved {
+  background: linear-gradient(145deg, #242A34 0%, #1D222A 100%);
+  border: 1px solid var(--border-carved);
+  box-shadow: inset 0 1px 0 rgba(223, 208, 184, 0.08), 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.rune-border-notch {
+  clip-path: polygon(
+    0 0, 
+    calc(100% - 10px) 0, 
+    100% 10px, 
+    100% 100%, 
+    10px 100%, 
+    0 calc(100% - 10px)
+  );
+}
+
+.stave-line {
+  position: relative;
+}
+.stave-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--moss-light) 0%, var(--border-subtle) 50%, var(--moss-dark) 100%);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--stone);
+}
