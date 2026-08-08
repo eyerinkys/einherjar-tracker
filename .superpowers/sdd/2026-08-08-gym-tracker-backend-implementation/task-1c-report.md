@@ -157,3 +157,47 @@ The audit found that the pre-existing schema used `double precision` for
   against the unverified endpoint. Supply fresh disposable pooled/direct URLs,
   inspect that target, then apply this exact migration twice and run the
   pooled/direct check before clearing this blocker.
+
+## Review remediation — round 2
+
+### Structural live schema contract
+
+- `src/db/check.ts` now fetches `pg_indexes.indexdef`, not only index names,
+  and passes each definition to `assertSchemaIntegrity`.
+- The integrity assertion normalizes catalog definitions (case, quoting,
+  public schema qualification, PostgreSQL enum casts, comma spacing, and
+  whitespace) before validation.
+- It requires exact normalized definitions for every Phase 1 ownership/history
+  index. In particular, the active-workout index must be unique, use exactly
+  `(user_id)`, and have exactly the `status = 'in_progress'` partial predicate;
+  the unique workout-set index must preserve
+  `(session_exercise_id, set_number)` order.
+- It now validates the definition of every required foreign key and check
+  constraint, not only its name. This verifies FK columns/references/delete
+  behavior and non-empty, positive, range, lifecycle, non-negative numeric,
+  finite numeric, and completed-rep constraints. The source split reference
+  remains required to use `ON DELETE SET NULL`.
+
+### Round 2 TDD evidence
+
+1. **Red:** `pnpm test src/db/schema-integrity.test.ts` ran 9 tests and failed
+   four expected regressions. Same-named non-unique/non-partial active-workout
+   and reversed set indexes, a weakened `target_sets >= 0` check, and a
+   `CASCADE` source-split FK all passed the prior implementation.
+2. **Green focused:** after adding normalized index and constraint definition
+   matching, `pnpm test src/db/schema-integrity.test.ts` passed 9/9 tests.
+3. **Green full:** `pnpm test` passed 6 files and 19 tests; `pnpm typecheck`,
+   `pnpm lint`, and `pnpm exec drizzle-kit check` passed. `pnpm db:generate`
+   reported no schema changes, and the unchanged
+   `pnpm exec next build --webpack` completed compilation, TypeScript, static
+   generation, and build traces.
+4. The initial full verification exposed one compile-only fixture omission
+   (`indexDefinitions` absent from the empty-metadata test). Adding the new
+   required empty field restored `pnpm typecheck`; the final full gate above is
+   the passing evidence.
+
+### Fresh migration gate
+
+The fresh disposable migration/rerun gate remains **BLOCKED** exactly as
+documented in the prior round. No unverified endpoint, production endpoint,
+or database command was used in this round.

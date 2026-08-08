@@ -24,6 +24,10 @@
 - Strengthened the direct schema check to inspect all required indexes and
   constraints, exact `numeric` weight storage, and `ON DELETE SET NULL` split
   history behavior. Failed checks now log only a fixed safe message.
+- Review round 2 makes those live checks structural: catalog definitions must
+  match the active-workout partial unique index, FK/history index columns and
+  ordering, and every critical FK/check condition after PostgreSQL definition
+  normalization.
 
 ## Neon state
 
@@ -41,7 +45,7 @@
 
 ## Fresh verification evidence
 
-- `pnpm test` — 6 files, 15 tests passed.
+- `pnpm test` — 6 files, 19 tests passed.
 - `pnpm typecheck` — passed.
 - `pnpm lint` — passed.
 - `pnpm exec drizzle-kit check` — passed.

@@ -29,8 +29,8 @@ async function checkConnection(connectionName: string, connectionString: string,
         from information_schema.tables
         where table_schema = 'public'
       `);
-      const indexes = await db.execute<{ indexname: string }>(sql`
-        select indexname
+      const indexes = await db.execute<{ name: string; definition: string }>(sql`
+        select indexname as name, indexdef as definition
         from pg_indexes
         where schemaname = 'public'
       `);
@@ -48,7 +48,8 @@ async function checkConnection(connectionName: string, connectionString: string,
 
       assertSchemaIntegrity({
         tableNames: tables.rows.map((row) => row.table_name),
-        indexNames: indexes.rows.map((row) => row.indexname),
+        indexNames: indexes.rows.map((row) => row.name),
+        indexDefinitions: indexes.rows,
         columnTypes: columnTypes.rows.map((row) => ({
           tableName: row.table_name,
           columnName: row.column_name,
