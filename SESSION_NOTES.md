@@ -78,13 +78,15 @@
 
 ## Phase 2 production activation
 
-- Hosted production auth activation is intentionally not performed. The ignored `.env.local` contains the paired production database URLs plus local-only auth settings.
+- Hosted production auth is active at `https://einherjar-tracker.vercel.app`. The canonical base URL and trusted origin use that exact origin without a trailing slash.
+- Live verification on 2026-08-09 confirmed unauthenticated root redirect, rendered sign-in/sign-up pages, a signed-out `null` session response, and HTTP 400 rejection for a non-allowlisted registration request.
+- The ignored `.env.local` contains the paired production database URLs plus local-only auth settings. The separately ignored temporary `.env` contains the Vercel import values, has mode `600`, and remains uncommitted at the user's request.
 - On 2026-08-09, local auth was activated with a freshly generated local secret, `http://localhost:3000` as the base/trusted origin, and the two user-provided allowlisted addresses. No account rows were created by this configuration change; each allowlisted user must still complete sign-up.
 - Before deploying or registering the two real accounts, add a generated `BETTER_AUTH_SECRET`, the canonical `BETTER_AUTH_URL`, exactly two real `BETTER_AUTH_ALLOWED_EMAILS`, and exact localhost/preview/production `BETTER_AUTH_TRUSTED_ORIGINS`.
 - Do not copy the disposable browser-test email addresses or test secret into production configuration.
 
 ## Next handoff
 
-1. For hosted deployment, configure the four Phase 2 auth environment values with the canonical hosted origins and a separate production secret, then create the two allowed accounts when publication/deployment is explicitly authorized.
+1. Create the two allowlisted accounts through the live sign-up page; do not share either password.
 2. Continue with Phase 3 of `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md` from the root `main` checkout.
 3. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
