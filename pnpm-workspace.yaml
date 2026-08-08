@@ -1,5 +1,6 @@
 allowBuilds:
   esbuild: true
   unrs-resolver: true
+engineStrict: true
 minimumReleaseAgeExclude:
   - ws@8.21.3

@@ -64,9 +64,8 @@
 
 ## Build toolchain
 
-- Installed checksum-verified Node v24.18.0 under
-  `/home/eyerin/.local/share/nodejs/` and pinned that version in `.node-version`
-  plus `package.json` engines.
+- Installed checksum-verified Node v24.18.0 locally. `.node-version` selects
+  that release, while the strict package engine contract permits only Node 24.
 - Next 16.3's experimental TypeScript CLI wrapper returned empty captured
   `--showConfig` output even though `tsc` succeeded. `next.config.ts` now uses
   the stable TypeScript compiler API path supported by TypeScript 5.9.

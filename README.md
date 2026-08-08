@@ -6,9 +6,9 @@ the approved UI.
 
 ## Local setup
 
-Use Node.js 24 LTS and pnpm 11.20.0. The repository pins the exact local Node
-version in `.node-version` and rejects newer major versions through
-`package.json` because untested current releases can break the Next.js build.
+Use Node.js 24 LTS and pnpm 11.20.0. `.node-version` selects the verified local
+release, while `package.json` and `pnpm-workspace.yaml` reject other Node majors
+because untested current releases can break the Next.js build.
 
 ```bash
 pnpm install --frozen-lockfile
