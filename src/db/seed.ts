@@ -1,12 +1,7 @@
-import { getDb } from './client';
-import { seedBuiltInExercises } from './seed-exercises';
+import { runSeed } from './seed-command';
 
-async function main(): Promise<void> {
-  await seedBuiltInExercises(getDb());
-  console.info('Built-in exercise seed completed.');
-}
-
-void main().catch(() => {
-  console.error('Built-in exercise seed failed.');
-  process.exitCode = 1;
+void runSeed().then((completed) => {
+  if (!completed) {
+    process.exitCode = 1;
+  }
 });

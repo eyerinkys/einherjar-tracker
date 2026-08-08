@@ -1,7 +1,27 @@
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 import { createDatabaseClient } from './client';
-import { BUILT_IN_EXERCISES, createBuiltInExerciseUpsert } from './seed-exercises';
+import {
+  BUILT_IN_EXERCISES,
+  createBuiltInExerciseUpsert,
+  seedBuiltInExercises,
+  type BuiltInExercise,
+} from './seed-exercises';
+
+type PersistedExercise = Omit<BuiltInExercise, 'createdByUserId' | 'isCustom'> & {
+  createdByUserId: string | null;
+  isCustom: boolean;
+};
+
+class InMemoryExerciseSeedDatabase {
+  readonly rows = new Map<string, PersistedExercise>();
+
+  async upsertBuiltInExercises(exercises: readonly BuiltInExercise[]): Promise<void> {
+    for (const exercise of exercises) {
+      this.rows.set(exercise.id, { ...exercise });
+    }
+  }
+}
 
 describe('built-in exercise seed', () => {
   it('uses the nine approved stable IDs with their canonical metadata', () => {
@@ -33,5 +53,42 @@ describe('built-in exercise seed', () => {
     expect(query.params).toContain('00000000-0000-4000-8000-000000000009');
     expect(query.params.filter((value) => value === null)).toHaveLength(10);
     expect(query.params.filter((value) => value === false)).toHaveLength(10);
+  });
+
+  it('inserts the built-ins once when the seed is rerun', async () => {
+    const database = new InMemoryExerciseSeedDatabase();
+
+    await seedBuiltInExercises(database);
+    await seedBuiltInExercises(database);
+
+    expect([...database.rows.values()]).toEqual(BUILT_IN_EXERCISES);
+    expect(database.rows).toHaveLength(9);
+  });
+
+  it('corrects a corrupted stable built-in row on rerun', async () => {
+    const database = new InMemoryExerciseSeedDatabase();
+
+    await seedBuiltInExercises(database);
+    database.rows.set('00000000-0000-4000-8000-000000000001', {
+      id: '00000000-0000-4000-8000-000000000001',
+      name: 'Corrupted name',
+      muscleGroup: 'Wrong group',
+      equipment: 'Wrong equipment',
+      category: 'isolation',
+      createdByUserId: 'foreign-user',
+      isCustom: true,
+    });
+
+    await seedBuiltInExercises(database);
+
+    expect(database.rows.get('00000000-0000-4000-8000-000000000001')).toEqual({
+      id: '00000000-0000-4000-8000-000000000001',
+      name: 'Romanian Deadlift',
+      muscleGroup: 'Hamstrings / Glutes',
+      equipment: 'Barbell',
+      category: 'compound',
+      createdByUserId: null,
+      isCustom: false,
+    });
   });
 });

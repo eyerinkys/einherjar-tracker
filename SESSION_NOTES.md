@@ -91,6 +91,13 @@
 - `pnpm typecheck` and `pnpm lint`: passed.
 - No migration, schema push, production seed, or other production data mutation was run.
 
+## Phase 3A Fix Round 1
+
+- `pnpm db:seed` now loads the documented root `.env.local` before database environment parsing, then always closes its Neon client after a successful or failed one-off seed attempt.
+- Seed persistence is now expressed through an atomic exercise-seed database adapter. The production adapter executes the existing Drizzle stable-ID upsert, while normal tests execute `seedBuiltInExercises` against a stateful in-memory adapter to prove first insert, rerun idempotency, and corrupted-row correction.
+- Added CLI lifecycle coverage using a temporary env file only; it proves environment loading precedes seeding and that the database client closes on both success and failure without connecting to the configured production target.
+- Fresh verification under Node v24.18.0: focused seed/CLI suite 6 passed; full suite 52 passed with 3 opt-in PostgreSQL tests skipped; `pnpm typecheck`, `pnpm lint`, and `git diff --check` passed. No production seed or migration command was run.
+
 ## Phase 2 production activation
 
 - Hosted production auth is active at `https://einherjar-tracker.vercel.app`. The canonical base URL and trusted origin use that exact origin without a trailing slash.
