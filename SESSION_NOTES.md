@@ -4,8 +4,7 @@
 
 - Active implementation worktree: `.worktrees/phase-1-neon-drizzle`
 - Branch: `phase-1-neon-drizzle`
-- Phase 1C is committed at `6c125f0`; the review remediation is committed as
-  its follow-up fix.
+- Phase 1C and its review remediation are committed through `7cce59c`.
 - Do not modify or stage the unrelated documentation changes in the main checkout.
 
 ## Completed implementation
@@ -45,7 +44,9 @@
 - Current `.env.local` endpoint hostnames match neither documented disposable
   branch nor the documented production branch. No migration, reset, or new
   database check may run against that unverified target.
-- User action in Neon is not required now. Before deploying or using production data, get explicit approval to apply reviewed migrations and configure production secrets.
+- A verified disposable Neon target is now required to close Phase 1. Before
+  deploying or using production data, get explicit approval to apply reviewed
+  migrations and configure production secrets.
 
 ## Fresh verification evidence
 
@@ -64,12 +65,14 @@
 
 - `pnpm build` remains blocked before application compilation because Turbopack
   cannot bind its internal port (`Operation not permitted`).
-- The unchanged fallback `pnpm exec next build --webpack` completed successfully:
-  compilation, TypeScript, static-page generation, and trace collection all
-  passed on Node v26.5.0.
-- Keep the repository configuration unchanged. The failing default build is a
-  host/Turbopack limitation; use a host that permits the worker port, or obtain
-  explicit approval before changing the local runtime/toolchain.
+- A fresh direct `pnpm exec next build --webpack` reproduction also fails on
+  Node v26.5.0 while Next parses TypeScript's child-process `--showConfig`
+  output, even though direct `pnpm exec tsc --showConfig` succeeds. Do not
+  treat the earlier webpack pass as reproducible current evidence.
+- Keep repository configuration unchanged. The build failures are host/runtime
+  limitations; use a supported Node/Next environment that permits Turbopack's
+  worker port and does not exhibit the Node 26 TypeScript parsing issue, or
+  obtain explicit approval before changing the local runtime/toolchain.
 
 ## Next step
 
