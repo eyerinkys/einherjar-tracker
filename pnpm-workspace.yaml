@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - ws@8.21.3

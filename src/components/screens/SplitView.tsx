@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { SplitDay, SplitExercise } from '@/types';
+import React, { useId, useRef, useState } from 'react';
+import { SplitDay } from '@/types';
 import { getExercises } from '@/services/dataService';
+import { createSplitExercise } from '@/lib/splitExercise';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { RuneStave } from '@/components/ui/RuneStave';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -15,6 +16,8 @@ interface SplitViewProps {
 
 export const SplitView: React.FC<SplitViewProps> = ({ splitDays, onUpdateSplitDays }) => {
   const availableExercises = getExercises();
+  const localExerciseIdPrefix = useId();
+  const nextLocalExerciseNumber = useRef(0);
   const [selectedDayId, setSelectedDayId] = useState<string>(splitDays[0]?.id || '');
   const [editingDayName, setEditingDayName] = useState<boolean>(false);
   const [dayNameInput, setDayNameInput] = useState<string>('');
@@ -71,16 +74,19 @@ export const SplitView: React.FC<SplitViewProps> = ({ splitDays, onUpdateSplitDa
     const exObj = availableExercises.find((e) => e.id === selectedAddExerciseId);
     if (!exObj) return;
 
-    const newSplitExercise: SplitExercise = {
-      id: `se-${Date.now()}`,
-      exerciseId: exObj.id,
-      exerciseName: exObj.name,
-      muscleGroup: exObj.muscleGroup,
+    let id: string;
+    do {
+      id = `se-${localExerciseIdPrefix}-${nextLocalExerciseNumber.current++}`;
+    } while (currentDay.exercises.some((exercise) => exercise.id === id));
+
+    const newSplitExercise = createSplitExercise({
+      id,
+      exercise: exObj,
+      existingExerciseCount: currentDay.exercises.length,
       targetSets: targetSetsInput,
       targetRepMin: targetRepMinInput,
       targetRepMax: targetRepMaxInput,
-      order: currentDay.exercises.length + 1,
-    };
+    });
 
     const updatedDays = splitDays.map((d) =>
       d.id === currentDay.id ? { ...d, exercises: [...d.exercises, newSplitExercise] } : d

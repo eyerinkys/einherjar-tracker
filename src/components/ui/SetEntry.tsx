@@ -8,16 +8,12 @@ interface SetEntryProps {
   set: WorkoutSet;
   previousSet?: { weight: number; reps: number };
   onUpdateSet: (updated: WorkoutSet) => void;
-  onRemoveSet?: () => void;
-  canRemove?: boolean;
 }
 
 export const SetEntry: React.FC<SetEntryProps> = ({
   set,
   previousSet,
   onUpdateSet,
-  onRemoveSet,
-  canRemove = false,
 }) => {
   const isCompleted = !!set.isCompleted;
 
