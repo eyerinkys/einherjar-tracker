@@ -6,7 +6,8 @@
 - Branch: `phase-1-neon-drizzle`
 - Phase 1C and its review remediation are committed through `7cce59c`; the
   reviewed build-toolchain fix is committed through `b90b8db`. Production
-  verification fixes are the current uncommitted boundary.
+  verification is committed at `b6ec788`; its review follow-up binds every
+  required constraint to its owning table.
 - Do not modify or stage the unrelated documentation changes in the main checkout.
 
 ## Completed implementation
@@ -51,7 +52,7 @@
 
 ## Fresh verification evidence
 
-- `pnpm test` — 6 files, 22 tests passed.
+- `pnpm test` — 6 files, 27 tests passed.
 - `pnpm typecheck` — passed.
 - `pnpm lint` — passed.
 - `pnpm exec drizzle-kit check` — passed.
@@ -83,4 +84,5 @@
    then replace both ignored `.env.local` URLs with the rotated pooled/direct
    values.
 2. Protect production branch `br-dawn-mountain-azrfoy6x` in the Neon console.
-3. Commit and review the production-verification fix, then continue with Phase 2.
+3. Finish review of the table-bound production integrity check, then continue
+   with Phase 2.

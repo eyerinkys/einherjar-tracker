@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { assertSchemaIntegrity } from './schema-integrity';
 
+const constraintTablePrefixes = [
+  'session_exercises',
+  'split_exercises',
+  'workout_sessions',
+  'workout_sets',
+  'split_days',
+  'exercises',
+  'account',
+  'session',
+] as const;
+
+function getConstraintTableName(name: string): string {
+  const tableName = constraintTablePrefixes.find((prefix) => name.startsWith(`${prefix}_`));
+  if (!tableName) throw new Error(`Unknown test constraint owner: ${name}`);
+  return tableName;
+}
+
 const completeMetadata = {
   tableNames: [
     'account',
@@ -77,7 +94,10 @@ const completeMetadata = {
     { name: 'workout_sets_set_number_positive', definition: 'CHECK (set_number > 0)' },
     { name: 'workout_sets_weight_finite', definition: "CHECK (weight IS NULL OR weight < 'Infinity'::numeric)" },
     { name: 'workout_sets_weight_non_negative', definition: 'CHECK (weight IS NULL OR weight >= 0)' },
-  ],
+  ].map((constraint) => ({
+    ...constraint,
+    tableName: getConstraintTableName(constraint.name),
+  })),
 };
 
 describe('assertSchemaIntegrity', () => {
@@ -274,5 +294,18 @@ describe('assertSchemaIntegrity', () => {
         ),
       }),
     ).toThrow('Invalid database constraint definition: split_exercises_target_sets_positive');
+  });
+
+  it('rejects an exact constraint attached to the wrong table', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) =>
+          constraint.name === 'split_exercises_target_sets_positive'
+            ? { ...constraint, tableName: 'exercises' }
+            : constraint,
+        ),
+      }),
+    ).toThrow('Missing database constraints: split_exercises_target_sets_positive');
   });
 });

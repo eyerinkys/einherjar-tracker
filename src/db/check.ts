@@ -39,10 +39,13 @@ async function checkConnection(connectionName: string, connectionString: string,
         from information_schema.columns
         where table_schema = 'public'
       `);
-      const constraints = await db.execute<{ name: string; definition: string }>(sql`
-        select pg_constraint.conname as name, pg_get_constraintdef(pg_constraint.oid) as definition
+      const constraints = await db.execute<{ table_name: string; name: string; definition: string }>(sql`
+        select pg_class.relname as table_name,
+               pg_constraint.conname as name,
+               pg_get_constraintdef(pg_constraint.oid) as definition
         from pg_constraint
         join pg_namespace on pg_namespace.oid = pg_constraint.connamespace
+        join pg_class on pg_class.oid = pg_constraint.conrelid
         where pg_namespace.nspname = 'public'
       `);
 
@@ -55,7 +58,11 @@ async function checkConnection(connectionName: string, connectionString: string,
           columnName: row.column_name,
           dataType: row.data_type,
         })),
-        constraints: constraints.rows,
+        constraints: constraints.rows.map((row) => ({
+          tableName: row.table_name,
+          name: row.name,
+          definition: row.definition,
+        })),
       });
     }
 

@@ -131,6 +131,40 @@ const constraintDefinitions: Record<(typeof criticalConstraints)[number], readon
   ],
 };
 
+const constraintTables: Record<(typeof criticalConstraints)[number], string> = {
+  account_user_id_user_id_fk: 'account',
+  exercises_created_by_user_id_user_id_fk: 'exercises',
+  exercises_equipment_not_blank: 'exercises',
+  exercises_muscle_group_not_blank: 'exercises',
+  exercises_name_not_blank: 'exercises',
+  session_exercises_exercise_id_exercises_id_fk: 'session_exercises',
+  session_exercises_name_not_blank: 'session_exercises',
+  session_exercises_target_rep_max_positive: 'session_exercises',
+  session_exercises_target_rep_min_positive: 'session_exercises',
+  session_exercises_target_rep_range_valid: 'session_exercises',
+  session_exercises_target_sets_positive: 'session_exercises',
+  session_exercises_workout_session_id_workout_sessions_id_fk: 'session_exercises',
+  session_user_id_user_id_fk: 'session',
+  split_days_name_not_blank: 'split_days',
+  split_days_user_id_user_id_fk: 'split_days',
+  split_exercises_exercise_id_exercises_id_fk: 'split_exercises',
+  split_exercises_split_day_id_split_days_id_fk: 'split_exercises',
+  split_exercises_target_rep_max_positive: 'split_exercises',
+  split_exercises_target_rep_min_positive: 'split_exercises',
+  split_exercises_target_rep_range_valid: 'split_exercises',
+  split_exercises_target_sets_positive: 'split_exercises',
+  workout_sessions_completion_state_valid: 'workout_sessions',
+  workout_sessions_source_split_day_id_split_days_id_fk: 'workout_sessions',
+  workout_sessions_split_day_name_not_blank: 'workout_sessions',
+  workout_sessions_user_id_user_id_fk: 'workout_sessions',
+  workout_sessions_version_positive: 'workout_sessions',
+  workout_sets_completed_reps_positive: 'workout_sets',
+  workout_sets_session_exercise_id_session_exercises_id_fk: 'workout_sets',
+  workout_sets_set_number_positive: 'workout_sets',
+  workout_sets_weight_finite: 'workout_sets',
+  workout_sets_weight_non_negative: 'workout_sets',
+};
+
 export interface SchemaMetadata {
   tableNames: readonly string[];
   indexNames: readonly string[];
@@ -151,6 +185,7 @@ export interface IndexDefinition {
 }
 
 export interface Constraint {
+  tableName: string;
   name: string;
   definition: string;
 }
@@ -220,17 +255,25 @@ export function assertSchemaIntegrity(metadata: SchemaMetadata): void {
     }
   }
 
-  const constraintNames = metadata.constraints.map((constraint) => constraint.name);
-  const missingConstraints = missingEntries(criticalConstraints, constraintNames);
+  const constraintKeys = new Set(
+    metadata.constraints.map((constraint) => `${constraint.tableName}.${constraint.name}`),
+  );
+  const missingConstraints = criticalConstraints.filter(
+    (name) => !constraintKeys.has(`${constraintTables[name]}.${name}`),
+  );
   if (missingConstraints.length > 0) {
     throw new Error(`Missing database constraints: ${missingConstraints.join(', ')}`);
   }
 
   const definedConstraints = new Map(
-    metadata.constraints.map((constraint) => [constraint.name, normalizeConstraintDefinition(constraint.definition)]),
+    metadata.constraints.map((constraint) => [
+      `${constraint.tableName}.${constraint.name}`,
+      normalizeConstraintDefinition(constraint.definition),
+    ]),
   );
   for (const [name, expectedDefinitions] of Object.entries(constraintDefinitions)) {
-    if (!expectedDefinitions.includes(definedConstraints.get(name) ?? '')) {
+    const key = `${constraintTables[name as (typeof criticalConstraints)[number]]}.${name}`;
+    if (!expectedDefinitions.includes(definedConstraints.get(key) ?? '')) {
       throw new Error(`Invalid database constraint definition: ${name}`);
     }
   }
