@@ -91,6 +91,69 @@ describe('assertSchemaIntegrity', () => {
     expect(() => assertSchemaIntegrity(completeMetadata)).not.toThrow();
   });
 
+  it('accepts PostgreSQL catalog formatting for trim checks', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) =>
+          constraint.name === 'exercises_equipment_not_blank'
+            ? { ...constraint, definition: 'CHECK ((length(TRIM(BOTH FROM equipment)) > 0))' }
+            : constraint,
+        ),
+      }),
+    ).not.toThrow();
+  });
+
+  it('accepts PostgreSQL catalog grouping for the workout lifecycle check', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) =>
+          constraint.name === 'workout_sessions_completion_state_valid'
+            ? {
+                ...constraint,
+                definition:
+                  "CHECK ((((status = 'in_progress'::workout_session_status) AND (completed_at IS NULL)) OR ((status = 'completed'::workout_session_status) AND (completed_at IS NOT NULL))))",
+              }
+            : constraint,
+        ),
+      }),
+    ).not.toThrow();
+  });
+
+  it('accepts PostgreSQL catalog grouping for the completed-set check', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) =>
+          constraint.name === 'workout_sets_completed_reps_positive'
+            ? {
+                ...constraint,
+                definition: 'CHECK (((is_completed = false) OR ((reps IS NOT NULL) AND (reps > 0))))',
+              }
+            : constraint,
+        ),
+      }),
+    ).not.toThrow();
+  });
+
+  it('accepts PostgreSQL catalog formatting for numeric weight checks', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) => {
+          if (constraint.name === 'workout_sets_weight_finite') {
+            return { ...constraint, definition: "CHECK (((weight IS NULL) OR (weight < 'Infinity'::numeric)))" };
+          }
+          if (constraint.name === 'workout_sets_weight_non_negative') {
+            return { ...constraint, definition: 'CHECK (((weight IS NULL) OR (weight >= (0)::numeric)))' };
+          }
+          return constraint;
+        }),
+      }),
+    ).not.toThrow();
+  });
+
   it('rejects a floating-point workout weight column', () => {
     expect(() =>
       assertSchemaIntegrity({

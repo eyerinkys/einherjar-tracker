@@ -5,7 +5,8 @@
 - Active implementation worktree: `.worktrees/phase-1-neon-drizzle`
 - Branch: `phase-1-neon-drizzle`
 - Phase 1C and its review remediation are committed through `7cce59c`; the
-  build-toolchain fix is the current uncommitted boundary.
+  reviewed build-toolchain fix is committed through `b90b8db`. Production
+  verification fixes are the current uncommitted boundary.
 - Do not modify or stage the unrelated documentation changes in the main checkout.
 
 ## Completed implementation
@@ -35,19 +36,18 @@
 
 ## Neon state
 
-- Production branch `br-dawn-mountain-azrfoy6x` was not migrated or otherwise changed.
+- Production branch `br-dawn-mountain-azrfoy6x` was identified through Neon SQL
+  metadata, confirmed blank, and migrated with `0000_windy_beyonder.sql`.
 - Disposable branches created for Phase 1 verification:
   - `br-autumn-silence-az3ob0kj` (`phase-1-schema`)
   - `br-twilight-waterfall-az8c5fyl` (`phase-1-empty-migration-verify`)
 - Both branches expire on 2026-08-22.
-- The empty verification branch proved the earlier two-file migration chain,
-  not the regenerated `0000_windy_beyonder.sql` artifact.
-- Neon SQL metadata confirms the current `.env.local` target is not production
-  branch `br-dawn-mountain-azrfoy6x`. It already has all ten Phase 1 tables and
-  a two-entry Drizzle migration ledger, so it was left unchanged.
-- The user chose to proceed with the real production database. Replace
-  `.env.local` with the production branch's pooled and direct connection URLs;
-  then inspect it read-only before applying the reviewed migration.
+- The exact final migration was applied to blank production and rerun safely;
+  Drizzle reported success both times without duplicating schema objects.
+- `.env.local` now points to the correctly paired production pooled/direct
+  endpoints. The file remains ignored and no credential is committed.
+- The previous non-production target already had ten Phase 1 tables and an old
+  two-entry migration ledger; it was identified and left unchanged.
 
 ## Fresh verification evidence
 
@@ -57,9 +57,13 @@
 - `pnpm exec drizzle-kit check` — passed.
 - `pnpm db:generate` — generated `0000_windy_beyonder.sql`, then reported no
   pending schema changes on a fresh rerun.
-- Do not treat the previous `pnpm db:check` result as current evidence for the
-  final migration: endpoint ownership could not be verified and the earlier
-  database ledger/schema predated this artifact and stronger integrity check.
+- `pnpm db:migrate` — applied the exact final migration to blank production;
+  a second run completed safely.
+- `pnpm db:check` — production pooled/direct connectivity and interactive
+  transactions passed; the live schema-integrity check passed.
+- Production verification exposed and fixed the catalog query's incorrect
+  `constraint_name` column and added exact PostgreSQL-generated constraint
+  formatting fixtures for trim, lifecycle, completed-set, and numeric checks.
 - `git diff --check` — passed.
 
 ## Build toolchain
@@ -75,11 +79,8 @@
 
 ## Next step
 
-1. In Neon, select production branch `br-dawn-mountain-azrfoy6x` and copy its
-   pooled and direct connection strings into `.env.local` as `DATABASE_URL` and
-   `DIRECT_DATABASE_URL`.
-2. Inspect production read-only. If it is the expected empty database, apply
-   `0000_windy_beyonder.sql` with `pnpm db:migrate`, rerun the migration, and
-   run `pnpm db:check` against both endpoints.
-3. Protect the production branch in Neon, record the evidence, and continue
-   with Phase 2.
+1. Rotate the `neondb_owner` password in Neon because it was pasted into chat,
+   then replace both ignored `.env.local` URLs with the rotated pooled/direct
+   values.
+2. Protect production branch `br-dawn-mountain-azrfoy6x` in the Neon console.
+3. Commit and review the production-verification fix, then continue with Phase 2.

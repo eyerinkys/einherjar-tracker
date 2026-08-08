@@ -40,7 +40,7 @@ async function checkConnection(connectionName: string, connectionString: string,
         where table_schema = 'public'
       `);
       const constraints = await db.execute<{ name: string; definition: string }>(sql`
-        select constraint_name as name, pg_get_constraintdef(pg_constraint.oid) as definition
+        select pg_constraint.conname as name, pg_get_constraintdef(pg_constraint.oid) as definition
         from pg_constraint
         join pg_namespace on pg_namespace.oid = pg_constraint.connamespace
         where pg_namespace.nspname = 'public'

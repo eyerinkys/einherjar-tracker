@@ -109,16 +109,26 @@ const constraintDefinitions: Record<(typeof criticalConstraints)[number], readon
   workout_sessions_completion_state_valid: [
     "check (status = 'in_progress' and completed_at is null) or (status = 'completed' and completed_at is not null)",
     "check status = 'in_progress' and completed_at is null or status = 'completed' and completed_at is not null",
+    "check ((status = 'in_progress') and (completed_at is null)) or ((status = 'completed') and (completed_at is not null))",
   ],
   workout_sessions_source_split_day_id_split_days_id_fk: ['foreign key (source_split_day_id) references split_days(id) on delete set null'],
   workout_sessions_split_day_name_not_blank: ['check length(trim(split_day_name)) > 0'],
   workout_sessions_user_id_user_id_fk: ['foreign key (user_id) references user(id) on delete cascade'],
   workout_sessions_version_positive: ['check version > 0'],
-  workout_sets_completed_reps_positive: ['check is_completed = false or (reps is not null and reps > 0)'],
+  workout_sets_completed_reps_positive: [
+    'check is_completed = false or (reps is not null and reps > 0)',
+    'check (is_completed = false) or ((reps is not null) and (reps > 0))',
+  ],
   workout_sets_session_exercise_id_session_exercises_id_fk: ['foreign key (session_exercise_id) references session_exercises(id) on delete cascade'],
   workout_sets_set_number_positive: ['check set_number > 0'],
-  workout_sets_weight_finite: ["check weight is null or weight < 'infinity'"],
-  workout_sets_weight_non_negative: ['check weight is null or weight >= 0'],
+  workout_sets_weight_finite: [
+    "check weight is null or weight < 'infinity'",
+    "check (weight is null) or (weight < 'infinity')",
+  ],
+  workout_sets_weight_non_negative: [
+    'check weight is null or weight >= 0',
+    'check (weight is null) or (weight >= (0))',
+  ],
 };
 
 export interface SchemaMetadata {
@@ -176,7 +186,9 @@ function hasOneWrappingPair(value: string): boolean {
 }
 
 function normalizeConstraintDefinition(definition: string): string {
-  const normalized = normalizeCatalogDefinition(definition).replace(/\bbtrim\(/g, 'trim(');
+  const normalized = normalizeCatalogDefinition(definition)
+    .replace(/\bbtrim\(/g, 'trim(')
+    .replace(/\btrim\(both from ([a-z_][a-z0-9_]*)\)/g, 'trim($1)');
   if (!normalized.startsWith('check ')) {
     return normalized;
   }
