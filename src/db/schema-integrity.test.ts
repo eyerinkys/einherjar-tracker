@@ -173,4 +173,17 @@ describe('assertSchemaIntegrity', () => {
       }),
     ).toThrow('Invalid database constraint definition: workout_sessions_source_split_day_id_split_days_id_fk');
   });
+
+  it('accepts PostgreSQL omitting the default NO ACTION clause', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) =>
+          constraint.name === 'split_exercises_exercise_id_exercises_id_fk'
+            ? { ...constraint, definition: 'FOREIGN KEY (exercise_id) REFERENCES exercises(id)' }
+            : constraint,
+        ),
+      }),
+    ).not.toThrow();
+  });
 });

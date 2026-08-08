@@ -97,7 +97,7 @@ const constraintPatterns: Record<(typeof criticalConstraints)[number], RegExp> =
   session_user_id_user_id_fk: /foreign key \(user_id\) references user\(id\) on delete cascade/,
   split_days_name_not_blank: /check .*?(?:trim|btrim).*?name.*?> 0/,
   split_days_user_id_user_id_fk: /foreign key \(user_id\) references user\(id\) on delete cascade/,
-  split_exercises_exercise_id_exercises_id_fk: /foreign key \(exercise_id\) references exercises\(id\) on delete no action/,
+  split_exercises_exercise_id_exercises_id_fk: /foreign key \(exercise_id\) references exercises\(id\)(?: on delete no action)?/,
   split_exercises_split_day_id_split_days_id_fk: /foreign key \(split_day_id\) references split_days\(id\) on delete cascade/,
   split_exercises_target_rep_max_positive: /check .*target_rep_max > 0/,
   split_exercises_target_rep_min_positive: /check .*target_rep_min > 0/,

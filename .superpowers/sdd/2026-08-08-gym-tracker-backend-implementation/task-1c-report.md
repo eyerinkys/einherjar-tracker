@@ -195,6 +195,11 @@ The audit found that the pre-existing schema used `double precision` for
    (`indexDefinitions` absent from the empty-metadata test). Adding the new
    required empty field restored `pnpm typecheck`; the final full gate above is
    the passing evidence.
+5. **Catalog-format TDD:** a final fixture omitting PostgreSQL's default
+   `ON DELETE NO ACTION` clause failed as expected (10-test focused suite,
+   one failure). The FK matcher now accepts that canonical implicit default
+   while still requiring every explicit cascade/set-null behavior; focused
+   verification passed 10/10, with typecheck and lint also passing.
 
 ### Fresh migration gate
 
