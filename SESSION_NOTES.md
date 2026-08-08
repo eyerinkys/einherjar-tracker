@@ -4,11 +4,14 @@
 
 - The approved backend implementation plan is `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
 - Phase 1 is being implemented in the linked worktree `.worktrees/phase-1-neon-drizzle` on branch `phase-1-neon-drizzle`.
-- Phase 1A and the validated database-environment contract are committed on that branch. The remaining Phase 1 schema, migrations, and database checks are currently uncommitted there.
+- Phase 1A–1C are committed on that branch through `7cce59c`. The schema uses exact PostgreSQL `numeric` workout loads, generated Better Auth/domain migrations, safe database-check diagnostics, and live catalog assertions for the Phase 1 contract.
+- Focused/full local verification and task-scoped reviews are clean: 22 Vitest tests, typecheck, lint, Drizzle schema check, migration-generation no-op, and an unchanged webpack-mode production build.
+- The normal Turbopack build is host-blocked because its worker cannot bind an internal port. This is an environment limitation; the webpack build succeeds without repository changes.
+- Phase 1 is not accepted yet: its exact final migration still must be applied from zero twice and checked through verified *disposable* Neon pooled/direct URLs. The current configured endpoints are not a documented disposable target, and no Neon provisioning credential/CLI is available. No unverified or production endpoint was used.
 - Do not mix that worktree's implementation changes with the unrelated documentation changes currently present in this main checkout.
 
 ## Next handoff
 
-1. Finish and review the Phase 1 migration/check boundary in its linked worktree.
-2. Verify the production build with a supported Node runtime before claiming the Phase 1 build criterion is met.
-3. Continue with Phase 2 only after Phase 1 is committed, reviewed, and its handoff is updated.
+1. Supply a verified fresh disposable Neon branch's `DATABASE_URL` and `DIRECT_DATABASE_URL`, or provision that branch locally.
+2. In `.worktrees/phase-1-neon-drizzle`, apply the exact generated migration twice and run `pnpm db:check` against that target.
+3. Record that evidence in both session notes, then continue with Phase 2.
