@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import {
-  getExercises,
   getExerciseProgression,
   getAIInsightForExercise,
   getAchievedPRs,
 } from '@/services/dataService';
+import type { Exercise } from '@/types';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { RuneBadge } from '@/components/ui/RuneBadge';
 import { InsightEye } from '@/components/ui/InsightEye';
@@ -22,14 +22,31 @@ import {
   CartesianGrid,
 } from 'recharts';
 
-export const ExerciseDetailView: React.FC = () => {
-  const exercises = getExercises();
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string>(exercises[0]?.id || 'ex-2');
+interface ExerciseDetailViewProps {
+  exercises: Exercise[];
+}
+
+const LEGACY_PROGRESS_ID_BY_BUILT_IN_ID: Readonly<Record<string, string>> = {
+  '00000000-0000-4000-8000-000000000001': 'ex-1',
+  '00000000-0000-4000-8000-000000000002': 'ex-2',
+  '00000000-0000-4000-8000-000000000003': 'ex-3',
+  '00000000-0000-4000-8000-000000000004': 'ex-4',
+  '00000000-0000-4000-8000-000000000005': 'ex-5',
+  '00000000-0000-4000-8000-000000000006': 'ex-6',
+  '00000000-0000-4000-8000-000000000007': 'ex-7',
+  '00000000-0000-4000-8000-000000000008': 'ex-8',
+  '00000000-0000-4000-8000-000000000009': 'ex-9',
+};
+
+export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercises }) => {
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>(exercises[0]?.id || '');
 
   const currentExercise = exercises.find((e) => e.id === selectedExerciseId) || exercises[0];
-  const chartData = getExerciseProgression(selectedExerciseId);
-  const aiInsight = getAIInsightForExercise(selectedExerciseId);
-  const achievedPRs = getAchievedPRs().filter((pr) => pr.exerciseId === selectedExerciseId);
+  const progressExerciseId =
+    LEGACY_PROGRESS_ID_BY_BUILT_IN_ID[currentExercise?.id ?? ''] ?? currentExercise?.id ?? '';
+  const chartData = getExerciseProgression(progressExerciseId);
+  const aiInsight = getAIInsightForExercise(progressExerciseId);
+  const achievedPRs = getAchievedPRs().filter((pr) => pr.exerciseId === progressExerciseId);
 
   const achievedPRWeight = chartData.length > 0 ? Math.max(...chartData.map((d) => d.weight), 0) : (achievedPRs[0]?.weight || 0);
   const max1RM = chartData.length > 0 ? Math.max(...chartData.map((d) => d.estimated1RM), 0) : (achievedPRs[0]?.estimated1RM || 0);
@@ -44,7 +61,7 @@ export const ExerciseDetailView: React.FC = () => {
           </label>
           <select
             id="progress-exercise"
-            value={selectedExerciseId}
+            value={currentExercise?.id ?? ''}
             onChange={(e) => setSelectedExerciseId(e.target.value)}
             className="w-full min-w-0 max-w-full bg-[#222831] border border-[#677D6A] text-[#DFD0B8] font-mono text-base font-bold px-3 py-1.5 rounded-xs focus:outline-none sm:w-auto"
           >

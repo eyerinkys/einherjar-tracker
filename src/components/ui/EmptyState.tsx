@@ -6,6 +6,7 @@ interface EmptyStateProps {
   title: string;
   description: string;
   actionLabel?: string;
+  disabled?: boolean;
   onAction?: () => void;
   icon?: React.ReactNode;
 }
@@ -14,6 +15,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   actionLabel,
+  disabled = false,
   onAction,
   icon,
 }) => {
@@ -33,8 +35,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       {actionLabel && onAction && (
         <div className="pt-2">
           <button
+            disabled={disabled}
             onClick={onAction}
-            className="px-5 py-2 bg-[#40534C] hover:bg-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold uppercase rounded-xs border border-[#677D6A] transition-all"
+            className="min-h-11 px-5 py-2 bg-[#40534C] hover:bg-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold uppercase rounded-xs border border-[#677D6A] transition-all"
+            type="button"
           >
             {actionLabel}
           </button>

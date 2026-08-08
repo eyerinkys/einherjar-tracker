@@ -7,10 +7,11 @@ export type NavTab = 'split' | 'train' | 'history' | 'progress' | 'bodyweight' |
 
 interface NavigationProps {
   activeTab: NavTab;
+  disabled?: boolean;
   onSelectTab: (tab: NavTab) => void;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ activeTab, onSelectTab }) => {
+export const Navigation: React.FC<NavigationProps> = ({ activeTab, disabled = false, onSelectTab }) => {
   const items: { id: NavTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'split', label: 'Split', icon: Layers },
     { id: 'train', label: 'Train', icon: Play },
@@ -31,6 +32,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onSelectTab }
             return (
               <button
                 key={item.id}
+                disabled={disabled}
                 onClick={() => onSelectTab(item.id)}
                 className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xs transition-all relative ${
                   isActive
@@ -63,6 +65,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onSelectTab }
             return (
               <button
                 key={item.id}
+                disabled={disabled}
                 onClick={() => onSelectTab(item.id)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xs font-mono text-xs tracking-wider transition-all text-left border ${
                   isActive

@@ -125,8 +125,29 @@
 - Before deploying or registering the two real accounts, add a generated `BETTER_AUTH_SECRET`, the canonical `BETTER_AUTH_URL`, exactly two real `BETTER_AUTH_ALLOWED_EMAILS`, and exact localhost/preview/production `BETTER_AUTH_TRUSTED_ORIGINS`.
 - Do not copy the disposable browser-test email addresses or test secret into production configuration.
 
+## Phase 3C — persistent Split UI integration
+
+- The protected server root now authenticates, loads the exercise library and current user's split in parallel, and passes those serializable DTOs into `ApplicationShell`.
+- The Split screen and Progress exercise selector no longer read mock exercise/split data. A fixed nine-built-in UUID adapter preserves the existing mock-backed progression/AI/PR datasets without making the mock exercise library authoritative again. `ApplicationShell` owns the authoritative current split state and continues passing that same state to the mock-backed Train screen until Train persistence's owning phase.
+- Connected create, rename, delete, and reorder day controls plus add, remove, reorder, and edit target/rep/notes controls to the eight authenticated Phase 3B Server Actions.
+- Successful operations reconcile the entire split from the authoritative action result. Failures retain persisted state and relevant drafts/confirmations, expose inline retry for retryable errors, and use refresh recovery for stale/missing resources.
+- Added bounded client validation, inline delete/remove confirmations, live error/success feedback, semantic labels, mobile 44px targets and wrapping layouts, keyboard-operable day tabs, pending-navigation containment, add-dialog focus trapping while idle or pending, and logical post-success focus recovery while preserving the incumbent Norse charcoal/bone/moss UI.
+- Added jsdom/React Testing Library behavior coverage for server hydration and parallel queries, all eight mutation success/failure paths, validation, pending/duplicate prevention and navigation containment, confirmation, authoritative reconciliation/refresh, downstream Train/Progress data, responsive contracts, and accessible controls.
+
+## Phase 3C verification
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Final focused Phase 3C suite: 2 files and 40 tests passed.
+- Full `pnpm test`: 19 files passed, 2 opt-in PostgreSQL files skipped; 134 tests passed and 7 skipped.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check`: passed.
+- The one required Impeccable detector run returned `[]` at the UI integration checkpoint. Later review fixes were validated with behavior tests, lint, typecheck, and build; the detector was not rerun because the task capped it at one invocation.
+- Local deterministic checks used server-action/query mocks and did not connect to or mutate a database. No migration, push, seed, deployment, or production data mutation was run.
+- The final bounded review confirmed the Progress UUID compatibility and pending empty-state guard, with no remaining Critical or Important findings.
+- The required live desktop/mobile walkthrough was not performed: the checkout exposes no disposable full-app database URL and no callable browser tool. Production credentials were deliberately not used for UI mutation tests. A future pass must use a disposable database/auth target to cover all eight operations, refresh persistence, keyboard/focus, mobile/desktop layout, console/network health, and forced failure/retry recovery.
+
 ## Next handoff
 
-1. Create the two allowlisted accounts through the live sign-up page; do not share either password.
-2. Continue with Phase 3C of `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md` by connecting the existing Split UI to the persistent query/actions.
-3. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
+1. Complete the Phase 3C desktop/mobile operation matrix only after providing a disposable, non-production full-application database and disposable auth account; do not reuse the configured production credentials.
+2. Create the two allowlisted accounts through the live sign-up page when authorized; do not share either password.
+3. Continue with the next approved persistence phase after the Phase 3C browser remainder is recorded.
+4. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
