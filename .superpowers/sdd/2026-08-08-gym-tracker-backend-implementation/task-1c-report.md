@@ -206,3 +206,35 @@ The audit found that the pre-existing schema used `double precision` for
 The fresh disposable migration/rerun gate remains **BLOCKED** exactly as
 documented in the prior round. No unverified endpoint, production endpoint,
 or database command was used in this round.
+
+## Review remediation — round 3
+
+### Exact normalized constraint definitions
+
+- Replaced every unanchored critical-FK/check regex with an exact normalized
+  catalog definition (or a strict two-value alternative for PostgreSQL's
+  implicit versus explicit default `ON DELETE NO ACTION`).
+- Normalization now additionally converts PostgreSQL's `btrim` rendering back
+  to canonical `trim` and removes only full wrapping check parentheses. It
+  preserves the complete check expression, so appended disjuncts cannot match.
+- The default split-exercise/exercise FK accepts only:
+  `FOREIGN KEY (exercise_id) REFERENCES exercises(id)` or that exact definition
+  with `ON DELETE NO ACTION`; explicit `CASCADE`, `SET NULL`, or any suffix is
+  rejected. All other FK delete actions and every check expression are exact.
+
+### Round 3 TDD evidence
+
+1. **Red:** `pnpm test src/db/schema-integrity.test.ts` ran 12 tests and
+   failed the two new regressions: an explicit `ON DELETE CASCADE` on the
+   default-NO-ACTION FK and `target_sets > 0 OR target_sets IS NULL` both
+   passed the prior unanchored matchers.
+2. **Green focused:** replacing the patterns with exact normalized canonical
+   definitions made the focused suite pass 12/12.
+3. **Green full:** `pnpm test` passed 6 files and 22 tests; `pnpm typecheck`,
+   `pnpm lint`, `pnpm exec drizzle-kit check`, and `pnpm db:generate` (no
+   schema changes) passed.
+
+### Fresh migration gate
+
+The fresh disposable migration/rerun gate remains **BLOCKED**. No unverified
+or production endpoint was touched in this remediation round.

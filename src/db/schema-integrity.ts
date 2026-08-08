@@ -81,38 +81,44 @@ const indexDefinitions = {
   workout_sets_session_exercise_set_number_unique: 'create unique index workout_sets_session_exercise_set_number_unique on workout_sets using btree (session_exercise_id,set_number)',
 } as const;
 
-const constraintPatterns: Record<(typeof criticalConstraints)[number], RegExp> = {
-  account_user_id_user_id_fk: /foreign key \(user_id\) references user\(id\) on delete cascade/,
-  exercises_created_by_user_id_user_id_fk: /foreign key \(created_by_user_id\) references user\(id\) on delete set null/,
-  exercises_equipment_not_blank: /check .*?(?:trim|btrim).*?equipment.*?> 0/,
-  exercises_muscle_group_not_blank: /check .*?(?:trim|btrim).*?muscle_group.*?> 0/,
-  exercises_name_not_blank: /check .*?(?:trim|btrim).*?name.*?> 0/,
-  session_exercises_exercise_id_exercises_id_fk: /foreign key \(exercise_id\) references exercises\(id\) on delete set null/,
-  session_exercises_name_not_blank: /check .*?(?:trim|btrim).*?exercise_name.*?> 0/,
-  session_exercises_target_rep_max_positive: /check .*target_rep_max > 0/,
-  session_exercises_target_rep_min_positive: /check .*target_rep_min > 0/,
-  session_exercises_target_rep_range_valid: /check .*target_rep_min <= target_rep_max/,
-  session_exercises_target_sets_positive: /check .*target_sets > 0/,
-  session_exercises_workout_session_id_workout_sessions_id_fk: /foreign key \(workout_session_id\) references workout_sessions\(id\) on delete cascade/,
-  session_user_id_user_id_fk: /foreign key \(user_id\) references user\(id\) on delete cascade/,
-  split_days_name_not_blank: /check .*?(?:trim|btrim).*?name.*?> 0/,
-  split_days_user_id_user_id_fk: /foreign key \(user_id\) references user\(id\) on delete cascade/,
-  split_exercises_exercise_id_exercises_id_fk: /foreign key \(exercise_id\) references exercises\(id\)(?: on delete no action)?/,
-  split_exercises_split_day_id_split_days_id_fk: /foreign key \(split_day_id\) references split_days\(id\) on delete cascade/,
-  split_exercises_target_rep_max_positive: /check .*target_rep_max > 0/,
-  split_exercises_target_rep_min_positive: /check .*target_rep_min > 0/,
-  split_exercises_target_rep_range_valid: /check .*target_rep_min <= target_rep_max/,
-  split_exercises_target_sets_positive: /check .*target_sets > 0/,
-  workout_sessions_completion_state_valid: /check .*status = 'in_progress'.*completed_at is null.*or.*status = 'completed'.*completed_at is not null/,
-  workout_sessions_source_split_day_id_split_days_id_fk: /foreign key \(source_split_day_id\) references split_days\(id\) on delete set null/,
-  workout_sessions_split_day_name_not_blank: /check .*?(?:trim|btrim).*?split_day_name.*?> 0/,
-  workout_sessions_user_id_user_id_fk: /foreign key \(user_id\) references user\(id\) on delete cascade/,
-  workout_sessions_version_positive: /check .*version > 0/,
-  workout_sets_completed_reps_positive: /check .*is_completed = false.*or.*reps is not null.*reps > 0/,
-  workout_sets_session_exercise_id_session_exercises_id_fk: /foreign key \(session_exercise_id\) references session_exercises\(id\) on delete cascade/,
-  workout_sets_set_number_positive: /check .*set_number > 0/,
-  workout_sets_weight_finite: /check .*weight is null.*or.*weight < 'infinity'/,
-  workout_sets_weight_non_negative: /check .*weight is null.*or.*weight >= 0/,
+const constraintDefinitions: Record<(typeof criticalConstraints)[number], readonly string[]> = {
+  account_user_id_user_id_fk: ['foreign key (user_id) references user(id) on delete cascade'],
+  exercises_created_by_user_id_user_id_fk: ['foreign key (created_by_user_id) references user(id) on delete set null'],
+  exercises_equipment_not_blank: ['check length(trim(equipment)) > 0'],
+  exercises_muscle_group_not_blank: ['check length(trim(muscle_group)) > 0'],
+  exercises_name_not_blank: ['check length(trim(name)) > 0'],
+  session_exercises_exercise_id_exercises_id_fk: ['foreign key (exercise_id) references exercises(id) on delete set null'],
+  session_exercises_name_not_blank: ['check length(trim(exercise_name)) > 0'],
+  session_exercises_target_rep_max_positive: ['check target_rep_max > 0'],
+  session_exercises_target_rep_min_positive: ['check target_rep_min > 0'],
+  session_exercises_target_rep_range_valid: ['check target_rep_min <= target_rep_max'],
+  session_exercises_target_sets_positive: ['check target_sets > 0'],
+  session_exercises_workout_session_id_workout_sessions_id_fk: ['foreign key (workout_session_id) references workout_sessions(id) on delete cascade'],
+  session_user_id_user_id_fk: ['foreign key (user_id) references user(id) on delete cascade'],
+  split_days_name_not_blank: ['check length(trim(name)) > 0'],
+  split_days_user_id_user_id_fk: ['foreign key (user_id) references user(id) on delete cascade'],
+  split_exercises_exercise_id_exercises_id_fk: [
+    'foreign key (exercise_id) references exercises(id)',
+    'foreign key (exercise_id) references exercises(id) on delete no action',
+  ],
+  split_exercises_split_day_id_split_days_id_fk: ['foreign key (split_day_id) references split_days(id) on delete cascade'],
+  split_exercises_target_rep_max_positive: ['check target_rep_max > 0'],
+  split_exercises_target_rep_min_positive: ['check target_rep_min > 0'],
+  split_exercises_target_rep_range_valid: ['check target_rep_min <= target_rep_max'],
+  split_exercises_target_sets_positive: ['check target_sets > 0'],
+  workout_sessions_completion_state_valid: [
+    "check (status = 'in_progress' and completed_at is null) or (status = 'completed' and completed_at is not null)",
+    "check status = 'in_progress' and completed_at is null or status = 'completed' and completed_at is not null",
+  ],
+  workout_sessions_source_split_day_id_split_days_id_fk: ['foreign key (source_split_day_id) references split_days(id) on delete set null'],
+  workout_sessions_split_day_name_not_blank: ['check length(trim(split_day_name)) > 0'],
+  workout_sessions_user_id_user_id_fk: ['foreign key (user_id) references user(id) on delete cascade'],
+  workout_sessions_version_positive: ['check version > 0'],
+  workout_sets_completed_reps_positive: ['check is_completed = false or (reps is not null and reps > 0)'],
+  workout_sets_session_exercise_id_session_exercises_id_fk: ['foreign key (session_exercise_id) references session_exercises(id) on delete cascade'],
+  workout_sets_set_number_positive: ['check set_number > 0'],
+  workout_sets_weight_finite: ["check weight is null or weight < 'infinity'"],
+  workout_sets_weight_non_negative: ['check weight is null or weight >= 0'],
 };
 
 export interface SchemaMetadata {
@@ -155,6 +161,33 @@ function normalizeCatalogDefinition(definition: string): string {
     .trim();
 }
 
+function hasOneWrappingPair(value: string): boolean {
+  if (!value.startsWith('(') || !value.endsWith(')')) {
+    return false;
+  }
+
+  let depth = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] === '(') depth += 1;
+    if (value[index] === ')') depth -= 1;
+    if (depth === 0 && index < value.length - 1) return false;
+  }
+  return depth === 0;
+}
+
+function normalizeConstraintDefinition(definition: string): string {
+  const normalized = normalizeCatalogDefinition(definition).replace(/\bbtrim\(/g, 'trim(');
+  if (!normalized.startsWith('check ')) {
+    return normalized;
+  }
+
+  let expression = normalized.slice('check '.length);
+  while (hasOneWrappingPair(expression)) {
+    expression = expression.slice(1, -1).trim();
+  }
+  return `check ${expression}`;
+}
+
 export function assertSchemaIntegrity(metadata: SchemaMetadata): void {
   const missingTables = missingEntries(expectedTables, metadata.tableNames);
   if (missingTables.length > 0) {
@@ -182,10 +215,10 @@ export function assertSchemaIntegrity(metadata: SchemaMetadata): void {
   }
 
   const definedConstraints = new Map(
-    metadata.constraints.map((constraint) => [constraint.name, normalizeCatalogDefinition(constraint.definition)]),
+    metadata.constraints.map((constraint) => [constraint.name, normalizeConstraintDefinition(constraint.definition)]),
   );
-  for (const [name, pattern] of Object.entries(constraintPatterns)) {
-    if (!pattern.test(definedConstraints.get(name) ?? '')) {
+  for (const [name, expectedDefinitions] of Object.entries(constraintDefinitions)) {
+    if (!expectedDefinitions.includes(definedConstraints.get(name) ?? '')) {
       throw new Error(`Invalid database constraint definition: ${name}`);
     }
   }

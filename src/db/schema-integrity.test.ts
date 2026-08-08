@@ -186,4 +186,30 @@ describe('assertSchemaIntegrity', () => {
       }),
     ).not.toThrow();
   });
+
+  it('rejects an explicit non-default delete action where NO ACTION is required', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) =>
+          constraint.name === 'split_exercises_exercise_id_exercises_id_fk'
+            ? { ...constraint, definition: 'FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE' }
+            : constraint,
+        ),
+      }),
+    ).toThrow('Invalid database constraint definition: split_exercises_exercise_id_exercises_id_fk');
+  });
+
+  it('rejects a same-named positive check with an appended weakening disjunct', () => {
+    expect(() =>
+      assertSchemaIntegrity({
+        ...completeMetadata,
+        constraints: completeMetadata.constraints.map((constraint) =>
+          constraint.name === 'split_exercises_target_sets_positive'
+            ? { ...constraint, definition: 'CHECK (target_sets > 0 OR target_sets IS NULL)' }
+            : constraint,
+        ),
+      }),
+    ).toThrow('Invalid database constraint definition: split_exercises_target_sets_positive');
+  });
 });

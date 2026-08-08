@@ -28,6 +28,10 @@
   match the active-workout partial unique index, FK/history index columns and
   ordering, and every critical FK/check condition after PostgreSQL definition
   normalization.
+- Review round 3 replaces permissive constraint regexes with exact normalized
+  canonical definitions. Only an implicit or explicit default `NO ACTION` is
+  accepted where PostgreSQL can omit that clause; appended weakening terms and
+  any other delete action fail the live check.
 
 ## Neon state
 
@@ -45,7 +49,7 @@
 
 ## Fresh verification evidence
 
-- `pnpm test` — 6 files, 19 tests passed.
+- `pnpm test` — 6 files, 22 tests passed.
 - `pnpm typecheck` — passed.
 - `pnpm lint` — passed.
 - `pnpm exec drizzle-kit check` — passed.
