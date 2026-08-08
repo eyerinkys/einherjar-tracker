@@ -33,7 +33,7 @@ export function mapSplitRows(rows: readonly SplitQueryRow[]): SplitDay[] {
       currentDay = {
         id: row.splitDayId,
         name: row.splitDayName,
-        order: result.length,
+        order: result.length + 1,
         exercises: [],
       };
       result.push(currentDay);
@@ -56,7 +56,7 @@ export function mapSplitRows(rows: readonly SplitQueryRow[]): SplitDay[] {
         targetSets: row.targetSets,
         targetRepMin: row.targetRepMin,
         targetRepMax: row.targetRepMax,
-        order: currentDay.exercises.length,
+        order: currentDay.exercises.length + 1,
         ...(row.notes === null ? {} : { notes: row.notes }),
       });
     }

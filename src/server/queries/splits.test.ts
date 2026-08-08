@@ -14,7 +14,7 @@ describe('split query adapter', () => {
     expect(mapSplitRows([])).toEqual([]);
   });
 
-  it('maps ordered database rows to gapless SplitDay and SplitExercise DTOs', () => {
+  it('maps ordered database rows to gapless one-based SplitDay and SplitExercise DTOs', () => {
     expect(
       mapSplitRows([
         {
@@ -64,7 +64,7 @@ describe('split query adapter', () => {
       {
         id: firstDayId,
         name: 'Pull',
-        order: 0,
+        order: 1,
         exercises: [
           {
             id: '00000000-0000-4000-8000-000000000012',
@@ -74,7 +74,7 @@ describe('split query adapter', () => {
             targetSets: 4,
             targetRepMin: 8,
             targetRepMax: 12,
-            order: 0,
+            order: 1,
           },
           {
             id: '00000000-0000-4000-8000-000000000011',
@@ -84,12 +84,12 @@ describe('split query adapter', () => {
             targetSets: 3,
             targetRepMin: 10,
             targetRepMax: 15,
-            order: 1,
+            order: 2,
             notes: 'Controlled eccentric',
           },
         ],
       },
-      { id: secondDayId, name: 'Push', order: 1, exercises: [] },
+      { id: secondDayId, name: 'Push', order: 2, exercises: [] },
     ]);
   });
 

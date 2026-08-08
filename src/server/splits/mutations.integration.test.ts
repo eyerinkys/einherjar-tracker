@@ -114,8 +114,8 @@ describe.runIf(Boolean(connectionString && integrationEnabled))(
       let result = await createSplitDayForUser(firstUserId, { name: 'Pull' }, database);
       result = await createSplitDayForUser(firstUserId, { name: 'Push' }, database);
       expect(result.map(({ name, order }) => ({ name, order }))).toEqual([
-        { name: 'Pull', order: 0 },
-        { name: 'Push', order: 1 },
+        { name: 'Pull', order: 1 },
+        { name: 'Push', order: 2 },
       ]);
 
       const pullId = result[0].id;
@@ -152,7 +152,7 @@ describe.runIf(Boolean(connectionString && integrationEnabled))(
       );
       const firstSplitExerciseId = result[0].exercises[0].id;
       const secondSplitExerciseId = result[0].exercises[1].id;
-      expect(result[0].exercises.map((entry) => entry.order)).toEqual([0, 1]);
+      expect(result[0].exercises.map((entry) => entry.order)).toEqual([1, 2]);
 
       result = await updateSplitExerciseForUser(
         firstUserId,
@@ -178,8 +178,8 @@ describe.runIf(Boolean(connectionString && integrationEnabled))(
         database,
       );
       expect(result[0].exercises.map((entry) => [entry.id, entry.order])).toEqual([
-        [secondSplitExerciseId, 0],
-        [firstSplitExerciseId, 1],
+        [secondSplitExerciseId, 1],
+        [firstSplitExerciseId, 2],
       ]);
 
       result = await removeSplitExerciseForUser(
@@ -187,7 +187,7 @@ describe.runIf(Boolean(connectionString && integrationEnabled))(
         { splitExerciseId: secondSplitExerciseId },
         database,
       );
-      expect(result[0].exercises.map((entry) => entry.order)).toEqual([0]);
+      expect(result[0].exercises.map((entry) => entry.order)).toEqual([1]);
 
       result = await reorderSplitDaysForUser(
         firstUserId,
@@ -195,12 +195,12 @@ describe.runIf(Boolean(connectionString && integrationEnabled))(
         database,
       );
       expect(result.map((entry) => [entry.id, entry.order])).toEqual([
-        [pushId, 0],
-        [pullId, 1],
+        [pushId, 1],
+        [pullId, 2],
       ]);
 
       result = await deleteSplitDayForUser(firstUserId, { splitDayId: pushId }, database);
-      expect(result.map((entry) => [entry.id, entry.order])).toEqual([[pullId, 0]]);
+      expect(result.map((entry) => [entry.id, entry.order])).toEqual([[pullId, 1]]);
 
       const storedDayOrders = await database
         .select({ sortOrder: splitDays.sortOrder })

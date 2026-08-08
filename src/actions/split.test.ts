@@ -42,7 +42,7 @@ vi.mock('../server/splits/mutations', () => ({
 const splitDayId = '00000000-0000-4000-8000-000000000001';
 const splitExerciseId = '00000000-0000-4000-8000-000000000002';
 const exerciseId = '00000000-0000-4000-8000-000000000003';
-const authoritativeSplit = [{ id: splitDayId, name: 'Push', order: 0, exercises: [] }];
+const authoritativeSplit = [{ id: splitDayId, name: 'Push', order: 1, exercises: [] }];
 
 const authenticatedUser = {
   id: 'trusted-user',
