@@ -384,6 +384,16 @@ describe('SplitView persistence behavior', () => {
     expect(actions.renameSplitDay).not.toHaveBeenCalled();
   });
 
+  it('returns focus to Rename Day when inline rename is cancelled', async () => {
+    const user = userEvent.setup();
+    render(<SplitHarness />);
+
+    await user.click(screen.getByRole('button', { name: 'Rename Day' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel rename' }));
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Rename Day' }));
+  });
+
   it('confirms before deleting a day and reconciles the authoritative empty state', async () => {
     actions.deleteSplitDay.mockResolvedValue({ ok: true, data: [] });
     const user = userEvent.setup();
@@ -421,6 +431,16 @@ describe('SplitView persistence behavior', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('Delete failed. Try again.');
     expect(screen.getByRole('heading', { name: 'Push' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm delete day' })).toBeTruthy();
+  });
+
+  it('returns focus to the day delete button when deletion is cancelled', async () => {
+    const user = userEvent.setup();
+    render(<SplitHarness />);
+
+    await user.click(screen.getByRole('button', { name: 'Delete Push' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel deletion' }));
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Delete Push' }));
   });
 
   it('cancels a pending day confirmation when another day is selected', async () => {
@@ -493,6 +513,38 @@ describe('SplitView persistence behavior', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Refresh split' }));
     expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it('announces completion when refreshed props reconcile a stale conflict', async () => {
+    actions.reorderSplitDays.mockResolvedValue({
+      ok: false,
+      code: 'STALE_ORDER',
+      message: 'Split order changed. Refresh and try again.',
+    });
+    const user = userEvent.setup();
+    const onUpdateSplitDays = vi.fn();
+    const view = render(
+      <SplitView
+        availableExercises={exercises}
+        splitDays={twoDaySplit}
+        onUpdateSplitDays={onUpdateSplitDays}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Move Push down' }));
+    await user.click(screen.getByRole('button', { name: 'Refresh split' }));
+    expect(screen.getByRole('status').textContent).toContain('Refreshing split…');
+
+    view.rerender(
+      <SplitView
+        availableExercises={exercises}
+        splitDays={twoDaySplit.map((day) => ({ ...day }))}
+        onUpdateSplitDays={onUpdateSplitDays}
+      />,
+    );
+
+    expect(screen.getByRole('status').textContent).toContain('Split refreshed.');
+    expect(screen.getByRole('status').textContent).not.toContain('Refreshing split…');
   });
 
   it('adds an exercise and renders the authoritative exercise row', async () => {
@@ -680,6 +732,18 @@ describe('SplitView persistence behavior', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('Remove failed. Try again.');
     expect(screen.getByRole('heading', { name: 'Bench Press' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm remove Bench Press' })).toBeTruthy();
+  });
+
+  it('returns focus to the exercise remove button when removal is cancelled', async () => {
+    const user = userEvent.setup();
+    render(<SplitHarness />);
+
+    await user.click(screen.getByRole('button', { name: 'Remove Bench Press' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel removal' }));
+
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Remove Bench Press' }),
+    );
   });
 
   it('moves an exercise and renders the authoritative order', async () => {

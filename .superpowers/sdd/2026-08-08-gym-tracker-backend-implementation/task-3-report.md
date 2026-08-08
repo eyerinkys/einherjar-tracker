@@ -127,3 +127,40 @@ To close this remainder, a future verifier must:
 
 - The implementation is deterministic-test, typecheck, lint, and build clean, and the single required detector invocation returned no findings. Completion remains `DONE_WITH_CONCERNS` until the safe live browser/disposable-database matrix above is performed.
 - No production deployment or production runtime behavior is asserted by this task.
+
+## Fix Round 1 — truthful refresh status and cancellation focus
+
+### Findings resolved
+
+- Conflict refresh recovery now stores the split-prop source that initiated the refresh. While that source is current, the live region says `Refreshing split…`; when refreshed authoritative props arrive with a new source, the rendered status derives `Split refreshed.` without a synchronous prop-to-state effect.
+- Cancelling inline rename, day deletion, or exercise removal now schedules focus restoration through the existing post-render focus mechanism. Focus returns respectively to `Rename Day`, the selected day's delete button, or the matching exercise remove button after the cancellation UI unmounts.
+
+### TDD evidence
+
+Rendered behavior tests were added first in `src/components/screens/SplitView.test.tsx`:
+
+- `returns focus to Rename Day when inline rename is cancelled`
+- `returns focus to the day delete button when deletion is cancelled`
+- `announces completion when refreshed props reconcile a stale conflict`
+- `returns focus to the exercise remove button when removal is cancelled`
+
+RED command:
+
+`PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm exec vitest run src/components/screens/SplitView.test.tsx -t "returns focus|announces completion when refreshed props"`
+
+RED result: `1 failed` file; `4 failed | 34 skipped` tests. The refresh case still rendered `Refreshing split…` after rerendering new authoritative props. The three cancellation cases focused another control or `body` instead of the originating action.
+
+GREEN command:
+
+`PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm exec vitest run src/components/screens/SplitView.test.tsx -t "returns focus|announces completion when refreshed props"`
+
+GREEN result: `1 passed` file; `4 passed | 34 skipped` tests.
+
+### Verification
+
+- Covering component suite: `PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm exec vitest run src/components/screens/SplitView.test.tsx` — `1 passed` file, `38 passed` tests.
+- `PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm typecheck` — passed.
+- `PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm lint` — passed.
+- `git diff --check` — passed.
+- Files changed in this fix: `src/components/screens/SplitView.tsx`, `src/components/screens/SplitView.test.tsx`, and this report.
+- `RULES.md` remains controller-owned and unstaged. No database, deployment, or browser operation was run. The disposable-database desktop/mobile browser gate remains outstanding and is not claimed here.

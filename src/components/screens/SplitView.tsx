@@ -41,9 +41,14 @@ interface ExerciseDraftState {
 
 type MutationErrorLocation = 'global' | 'addExercise';
 type MutationRecovery = 'retry' | 'refresh';
+interface MutationStatus {
+  message: string;
+  refreshSource?: SplitDay[];
+}
 type PendingFocus =
   | { kind: 'dayTab'; id: string }
-  | { kind: 'createDay' | 'renameDay' | 'addExercise' };
+  | { kind: 'removeExercise'; id: string }
+  | { kind: 'createDay' | 'renameDay' | 'deleteDay' | 'addExercise' };
 
 function exerciseDraft(exercise: SplitExercise): ExerciseDraft {
   return {
@@ -106,7 +111,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
   const [mutationErrorLocation, setMutationErrorLocation] =
     useState<MutationErrorLocation>('global');
   const [mutationRecovery, setMutationRecovery] = useState<MutationRecovery>('retry');
-  const [mutationStatus, setMutationStatus] = useState<string | null>(null);
+  const [mutationStatus, setMutationStatus] = useState<MutationStatus | null>(null);
   const [exerciseDraftState, setExerciseDraftState] = useState<ExerciseDraftState>(() => ({
     source: splitDays,
     drafts: initialExerciseDrafts(splitDays),
@@ -126,7 +131,9 @@ export const SplitView: React.FC<SplitViewProps> = ({
   const dayTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const createDayButtonRef = useRef<HTMLButtonElement | null>(null);
   const renameDayButtonRef = useRef<HTMLButtonElement | null>(null);
+  const deleteDayButtonRef = useRef<HTMLButtonElement | null>(null);
   const addExerciseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const removeExerciseButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const addExerciseSelectRef = useRef<HTMLSelectElement | null>(null);
   const addExerciseDialogRef = useRef<HTMLDivElement | null>(null);
   const addExerciseTriggerRef = useRef<HTMLElement | null>(null);
@@ -136,6 +143,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
 
   const currentDay = splitDays.find((d) => d.id === selectedDayId) || splitDays[0];
   const currentDayIndex = currentDay ? splitDays.findIndex((day) => day.id === currentDay.id) : -1;
+  const mutationStatusMessage =
+    mutationStatus?.refreshSource && mutationStatus.refreshSource !== splitDays
+      ? 'Split refreshed.'
+      : mutationStatus?.message;
 
   useEffect(() => {
     if (showAddModal) {
@@ -168,10 +179,14 @@ export const SplitView: React.FC<SplitViewProps> = ({
       createDayButtonRef.current?.focus();
     } else if (target.kind === 'renameDay') {
       renameDayButtonRef.current?.focus();
+    } else if (target.kind === 'deleteDay') {
+      deleteDayButtonRef.current?.focus();
+    } else if (target.kind === 'removeExercise') {
+      removeExerciseButtonRefs.current[target.id]?.focus();
     } else {
       addExerciseButtonRef.current?.focus();
     }
-  }, [splitDays]);
+  }, [confirmingDayId, confirmingExerciseId, editingDayId, splitDays]);
 
   const openAddExercise = () => {
     addExerciseTriggerRef.current = document.activeElement as HTMLElement | null;
@@ -195,7 +210,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
     if (mutationRecovery === 'refresh') {
       retryOperation.current = null;
       setMutationError(null);
-      setMutationStatus('Refreshing split…');
+      setMutationStatus({ message: 'Refreshing split…', refreshSource: splitDays });
       if (mutationErrorLocation === 'addExercise') {
         restoreAddExerciseFocus.current = true;
         setShowAddModal(false);
@@ -313,7 +328,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
       onUpdateSplitDays(result.data);
       reconcileExerciseDrafts(result.data);
       onSuccess?.(result.data);
-      setMutationStatus('Split updated.');
+      setMutationStatus({ message: 'Split updated.' });
     } catch {
       setMutationError('Unable to update the split. Please try again.');
     } finally {
@@ -573,9 +588,9 @@ export const SplitView: React.FC<SplitViewProps> = ({
           </button>
         </div>
       ) : null}
-      {mutationStatus ? (
+      {mutationStatusMessage ? (
         <p className="font-mono text-xs text-[#8DAA91]" role="status">
-          {mutationStatus}
+          {mutationStatusMessage}
         </p>
       ) : null}
       <div className="flex justify-end">
@@ -734,7 +749,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
                   </button>
                   <button
                     aria-label="Cancel rename"
-                    onClick={() => setEditingDayId(null)}
+                    onClick={() => {
+                      pendingFocus.current = { kind: 'renameDay' };
+                      setEditingDayId(null);
+                    }}
                     className="min-h-11 min-w-11 inline-flex items-center justify-center bg-[#393E46] text-[#DFD0B8] rounded-xs hover:bg-[#4D5460]"
                     disabled={isPending}
                     type="button"
@@ -788,6 +806,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
                     className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#B88989] transition-colors"
                     disabled={isPending}
                     onClick={() => setConfirmingDayId(currentDay.id)}
+                    ref={deleteDayButtonRef}
                     type="button"
                   >
                     <Trash2 aria-hidden="true" className="w-4 h-4" />
@@ -818,7 +837,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
                 <button
                   className="min-h-11 px-4 border border-[#4D5460] text-[#DFD0B8] uppercase"
                   disabled={isPending}
-                  onClick={() => setConfirmingDayId(null)}
+                  onClick={() => {
+                    pendingFocus.current = { kind: 'deleteDay' };
+                    setConfirmingDayId(null);
+                  }}
                   type="button"
                 >
                   Cancel deletion
@@ -895,6 +917,9 @@ export const SplitView: React.FC<SplitViewProps> = ({
                           className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#B88989] transition-colors ml-1"
                           disabled={isPending}
                           title={`Remove ${ex.exerciseName}`}
+                          ref={(button) => {
+                            removeExerciseButtonRefs.current[ex.id] = button;
+                          }}
                           type="button"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -909,7 +934,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
                           <button
                             className="min-h-11 px-4 border border-[#4D5460] text-[#DFD0B8]"
                             disabled={isPending}
-                            onClick={() => setConfirmingExerciseId(null)}
+                            onClick={() => {
+                              pendingFocus.current = { kind: 'removeExercise', id: ex.id };
+                              setConfirmingExerciseId(null);
+                            }}
                             type="button"
                           >
                             Cancel removal
