@@ -3,7 +3,7 @@
 ## Current backend implementation state
 
 - The approved backend implementation plan is `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
-- Phase 1A-1C, the reviewed build-toolchain fix, and production verification have been merged into `main` from `phase-1-neon-drizzle`.
+- Phase 1A-1C, the reviewed build-toolchain fix, and production verification were merged into `main` at `1cf1427`. The linked worktree and fully merged local feature branch were then removed, leaving the project root as the single working checkout.
 - The schema uses exact PostgreSQL `numeric` workout loads, generated Better Auth/domain migrations, safe database-check diagnostics, and table-bound live catalog assertions for the Phase 1 contract.
 - The root `.env.local` contains the paired production pooled/direct endpoints. It remains ignored, has restrictive local permissions, and no credential is committed.
 - Production branch `br-dawn-mountain-azrfoy6x` was identified through Neon SQL metadata, confirmed blank, migrated with `0000_windy_beyonder.sql`, rerun safely, and verified through pooled/direct transactions plus the strict live schema check.
@@ -47,6 +47,7 @@
 - Next 16.3's experimental TypeScript CLI wrapper returned empty captured `--showConfig` output even though `tsc` succeeded. `next.config.ts` uses the stable TypeScript compiler API path supported by TypeScript 5.9.
 - The managed host blocks Turbopack's internal port, so the production build script explicitly uses webpack.
 - pnpm rejects unsupported Node majors before installation.
+- pnpm 11 requires an explicit build-script decision for the optional `bufferutil` native addon pulled by `ws`. `pnpm-workspace.yaml` sets it to `false`; `ws` uses its supported JavaScript fallback while required `esbuild` and `unrs-resolver` scripts remain allowed.
 
 ## Next handoff
 
