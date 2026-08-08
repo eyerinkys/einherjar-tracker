@@ -6,7 +6,9 @@ the approved UI.
 
 ## Local setup
 
-Use Node.js 24 or newer and pnpm 11.20.0.
+Use Node.js 24 LTS and pnpm 11.20.0. The repository pins the exact local Node
+version in `.node-version` and rejects newer major versions through
+`package.json` because untested current releases can break the Next.js build.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -19,8 +21,9 @@ Set the two values in the root `.env.local` file. It is ignored by Git.
 - `DIRECT_DATABASE_URL` is the direct Neon URL used only by migrations and
   database checks.
 
-Use a disposable development or test Neon branch locally. Never put production
-credentials in test configuration or commit either connection URL.
+Use a development branch for destructive experiments and automated tests. The
+production application uses the protected production branch; never commit any
+connection URL or use production credentials in test configuration.
 
 ## Database migrations
 

@@ -4,7 +4,8 @@
 
 - Active implementation worktree: `.worktrees/phase-1-neon-drizzle`
 - Branch: `phase-1-neon-drizzle`
-- Phase 1C and its review remediation are committed through `7cce59c`.
+- Phase 1C and its review remediation are committed through `7cce59c`; the
+  build-toolchain fix is the current uncommitted boundary.
 - Do not modify or stage the unrelated documentation changes in the main checkout.
 
 ## Completed implementation
@@ -41,12 +42,12 @@
 - Both branches expire on 2026-08-22.
 - The empty verification branch proved the earlier two-file migration chain,
   not the regenerated `0000_windy_beyonder.sql` artifact.
-- Current `.env.local` endpoint hostnames match neither documented disposable
-  branch nor the documented production branch. No migration, reset, or new
-  database check may run against that unverified target.
-- A verified disposable Neon target is now required to close Phase 1. Before
-  deploying or using production data, get explicit approval to apply reviewed
-  migrations and configure production secrets.
+- Neon SQL metadata confirms the current `.env.local` target is not production
+  branch `br-dawn-mountain-azrfoy6x`. It already has all ten Phase 1 tables and
+  a two-entry Drizzle migration ledger, so it was left unchanged.
+- The user chose to proceed with the real production database. Replace
+  `.env.local` with the production branch's pooled and direct connection URLs;
+  then inspect it read-only before applying the reviewed migration.
 
 ## Fresh verification evidence
 
@@ -61,23 +62,25 @@
   database ledger/schema predated this artifact and stronger integrity check.
 - `git diff --check` — passed.
 
-## Build limitation
+## Build toolchain
 
-- `pnpm build` remains blocked before application compilation because Turbopack
-  cannot bind its internal port (`Operation not permitted`).
-- A fresh direct `pnpm exec next build --webpack` reproduction also fails on
-  Node v26.5.0 while Next parses TypeScript's child-process `--showConfig`
-  output, even though direct `pnpm exec tsc --showConfig` succeeds. Do not
-  treat the earlier webpack pass as reproducible current evidence.
-- Keep repository configuration unchanged. The build failures are host/runtime
-  limitations; use a supported Node/Next environment that permits Turbopack's
-  worker port and does not exhibit the Node 26 TypeScript parsing issue, or
-  obtain explicit approval before changing the local runtime/toolchain.
+- Installed checksum-verified Node v24.18.0 under
+  `/home/eyerin/.local/share/nodejs/` and pinned that version in `.node-version`
+  plus `package.json` engines.
+- Next 16.3's experimental TypeScript CLI wrapper returned empty captured
+  `--showConfig` output even though `tsc` succeeded. `next.config.ts` now uses
+  the stable TypeScript compiler API path supported by TypeScript 5.9.
+- The managed host blocks Turbopack's internal port, so the production build
+  script explicitly uses webpack. The unchanged application then completed
+  compilation, TypeScript, static generation, and build traces under Node 24.
 
 ## Next step
 
-1. Obtain a verified fresh, disposable non-production Neon database/branch and
-   set only its pooled/direct URLs in `.env.local`.
-2. Inspect that target, apply `0000_windy_beyonder.sql` with `pnpm db:migrate`,
-   rerun `pnpm db:migrate`, then run `pnpm db:check` against both endpoints.
-3. Continue with Phase 2 only after that handoff is accepted.
+1. In Neon, select production branch `br-dawn-mountain-azrfoy6x` and copy its
+   pooled and direct connection strings into `.env.local` as `DATABASE_URL` and
+   `DIRECT_DATABASE_URL`.
+2. Inspect production read-only. If it is the expected empty database, apply
+   `0000_windy_beyonder.sql` with `pnpm db:migrate`, rerun the migration, and
+   run `pnpm db:check` against both endpoints.
+3. Protect the production branch in Neon, record the evidence, and continue
+   with Phase 2.
