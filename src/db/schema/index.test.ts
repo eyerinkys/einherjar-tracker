@@ -27,6 +27,13 @@ describe('Phase 1 workout schema', () => {
     expect(setIndexes.some((index) => index.config.name === 'workout_sets_session_exercise_set_number_unique')).toBe(true);
   });
 
+  it('uses the unique set-position index to cover the set foreign key without a redundant index', () => {
+    const setIndexes = getTableConfig(workoutSets).indexes;
+
+    expect(setIndexes.some((index) => index.config.name === 'workout_sets_session_exercise_set_number_unique')).toBe(true);
+    expect(setIndexes.some((index) => index.config.name === 'workout_sets_session_exercise_idx')).toBe(false);
+  });
+
   it('keeps completed workout state and load values valid', () => {
     const sessionChecks = getTableConfig(workoutSessions).checks.map((check) => check.name);
     const setChecks = getTableConfig(workoutSets).checks.map((check) => check.name);

@@ -164,5 +164,4 @@ CREATE INDEX "split_exercises_exercise_idx" ON "split_exercises" USING btree ("e
 CREATE INDEX "workout_sessions_user_completed_at_idx" ON "workout_sessions" USING btree ("user_id","completed_at");--> statement-breakpoint
 CREATE INDEX "workout_sessions_source_split_day_idx" ON "workout_sessions" USING btree ("source_split_day_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "workout_sessions_one_in_progress_per_user" ON "workout_sessions" USING btree ("user_id") WHERE "workout_sessions"."status" = 'in_progress';--> statement-breakpoint
-CREATE UNIQUE INDEX "workout_sets_session_exercise_set_number_unique" ON "workout_sets" USING btree ("session_exercise_id","set_number");--> statement-breakpoint
-CREATE INDEX "workout_sets_session_exercise_idx" ON "workout_sets" USING btree ("session_exercise_id");
+CREATE UNIQUE INDEX "workout_sets_session_exercise_set_number_unique" ON "workout_sets" USING btree ("session_exercise_id","set_number");

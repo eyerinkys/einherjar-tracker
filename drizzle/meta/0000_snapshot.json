@@ -1,5 +1,5 @@
 {
-  "id": "7ed435e6-b401-4057-8276-7af135324ae7",
+  "id": "16dc98fa-a4c6-43f7-a0d3-92d4b4c2d51a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1145,21 +1145,6 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "workout_sets_session_exercise_idx": {
-          "name": "workout_sets_session_exercise_idx",
-          "columns": [
-            {
-              "expression": "session_exercise_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}

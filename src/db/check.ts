@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import { sql } from 'drizzle-orm';
 import { createDatabaseClient } from './client';
+import { getSafeDatabaseCheckFailureMessage } from './error-redaction';
 import { getServerEnv } from '../lib/env';
 import { assertSchemaIntegrity } from './schema-integrity';
 
@@ -33,10 +34,27 @@ async function checkConnection(connectionName: string, connectionString: string,
         from pg_indexes
         where schemaname = 'public'
       `);
+      const columnTypes = await db.execute<{ table_name: string; column_name: string; data_type: string }>(sql`
+        select table_name, column_name, data_type
+        from information_schema.columns
+        where table_schema = 'public'
+      `);
+      const constraints = await db.execute<{ name: string; definition: string }>(sql`
+        select constraint_name as name, pg_get_constraintdef(pg_constraint.oid) as definition
+        from pg_constraint
+        join pg_namespace on pg_namespace.oid = pg_constraint.connamespace
+        where pg_namespace.nspname = 'public'
+      `);
 
       assertSchemaIntegrity({
         tableNames: tables.rows.map((row) => row.table_name),
         indexNames: indexes.rows.map((row) => row.indexname),
+        columnTypes: columnTypes.rows.map((row) => ({
+          tableName: row.table_name,
+          columnName: row.column_name,
+          dataType: row.data_type,
+        })),
+        constraints: constraints.rows,
       });
     }
 
@@ -55,7 +73,6 @@ async function main() {
 }
 
 void main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : 'Unknown database check failure';
-  console.error(`Database check failed: ${message}`);
+  console.error(getSafeDatabaseCheckFailureMessage(error));
   process.exitCode = 1;
 });

@@ -172,7 +172,6 @@ export const workoutSets = pgTable(
       sql`${table.isCompleted} = false OR (${table.reps} IS NOT NULL AND ${table.reps} > 0)`,
     ),
     uniqueIndex('workout_sets_session_exercise_set_number_unique').on(table.sessionExerciseId, table.setNumber),
-    index('workout_sets_session_exercise_idx').on(table.sessionExerciseId),
   ],
 );
 
