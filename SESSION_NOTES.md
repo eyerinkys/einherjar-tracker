@@ -98,6 +98,24 @@
 - Added CLI lifecycle coverage using a temporary env file only; it proves environment loading precedes seeding and that the database client closes on both success and failure without connecting to the configured production target.
 - Fresh verification under Node v24.18.0: focused seed/CLI suite 6 passed; full suite 52 passed with 3 opt-in PostgreSQL tests skipped; `pnpm typecheck`, `pnpm lint`, and `git diff --check` passed. No production seed or migration command was run.
 
+## Phase 3B — persistent user-owned splits
+
+- Added bounded Zod contracts for all eight split Server Actions. Split days are capped at 50 per user, exercises at 50 per day, names at 100 trimmed nonblank characters, target sets at 1-20, reps at 1-100 with `min <= max`, and notes at 1,000 characters. Reorder inputs reject malformed, duplicate, replayed, oversized, and client-supplied ownership fields.
+- Added server-only `getSplitDays(userId)`, explicit joined-row-to-DTO mapping, stable database ordering by stored sort order plus ID, and gapless DTO order values without leaking database-only fields.
+- Added authenticated `createSplitDay`, `renameSplitDay`, `deleteSplitDay`, `reorderSplitDays`, `addSplitExercise`, `removeSplitExercise`, `reorderSplitExercises`, and `updateSplitExercise` actions. Every action resolves the owner through `requireUser()` and returns the authoritative updated `SplitDay[]` in `ActionResult<T>`.
+- All child updates/deletes resolve ownership through `split_exercises -> split_days`; foreign and missing resources return the same safe `NOT_FOUND` result. Exercise additions accept only shared built-ins or future custom exercises owned by the authenticated user.
+- Create/delete/add/remove/reorder paths normalize stored order gaplessly. Reorders lock the owning user or split-day parent row inside an interactive transaction, re-read the current owned IDs after the lock, require the exact list, return `NOT_FOUND` for submitted foreign/deleted IDs, and return `STALE_ORDER` for owned incomplete lists.
+- Added deterministic unit coverage plus an opt-in PostgreSQL suite (`RUN_SPLIT_DATABASE_TESTS=1` with `SPLIT_TEST_DATABASE_URL`) for all mutations, persistent limits, ownership denial, visible-exercise enforcement, normalization, exact-list rejection, and lock-then-concurrent-deletion behavior.
+
+## Phase 3B verification
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Final focused split suite: 42 tests passed; 4 opt-in PostgreSQL tests skipped because no split test database was configured.
+- Full `pnpm test`: 17 files passed, 2 opt-in PostgreSQL files skipped; 94 tests passed and 7 skipped.
+- `pnpm typecheck` and `pnpm lint`: passed.
+- Independent transaction/security review found one Important reorder error-classification mismatch; it was corrected and the fix round was approved with no regression found.
+- No migration, schema push, production seed, or production data mutation was run.
+
 ## Phase 2 production activation
 
 - Hosted production auth is active at `https://einherjar-tracker.vercel.app`. The canonical base URL and trusted origin use that exact origin without a trailing slash.
@@ -110,5 +128,5 @@
 ## Next handoff
 
 1. Create the two allowlisted accounts through the live sign-up page; do not share either password.
-2. Continue with Phase 3 of `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md` from the root `main` checkout.
+2. Continue with Phase 3C of `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md` by connecting the existing Split UI to the persistent query/actions.
 3. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
