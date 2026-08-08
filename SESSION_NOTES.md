@@ -76,6 +76,21 @@
 - The 2026-08-09 closeout reran the full code and schema gate on Node v24.18.0, reconfirmed pooled/direct production connectivity and schema integrity, and smoke-tested the production build: unauthenticated `/` redirected to `/sign-in`, `/sign-up` rendered, and a non-allowlisted registration returned HTTP 400.
 - The closeout found one root `main` worktree and no linked worktrees to merge or remove. Drizzle generated no changes and the Better Auth schema remained byte-for-byte identical, so no database migration or push was required.
 
+## Phase 3A — built-in exercise seed and read adapter
+
+- Added the explicit `pnpm db:seed` entrypoint for the nine approved built-in exercises. It is safe by default because it only connects when explicitly invoked; it was not run against the configured production target during this implementation.
+- Built-ins use stable UUID primary keys and an `ON CONFLICT (id) DO UPDATE` statement that corrects canonical metadata on reruns without creating duplicates. Every corrected built-in is forced to `created_by_user_id = NULL` and `is_custom = false`.
+- Added server-only `getExercises(userId)`, which selects explicit UI fields only, returns shared built-ins plus future custom exercises owned by the trusted user, excludes foreign/custom malformed rows, and orders by name then ID deterministically.
+- Added an explicit database-row-to-`Exercise` DTO mapper so timestamps and other database-only fields are not leaked to the UI. Custom exercise creation and all UI paths remain unchanged.
+
+## Phase 3A verification
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Focused seed/query suite: 2 files, 6 tests passed.
+- Full `pnpm test`: 12 files passed, 1 opt-in PostgreSQL file skipped; 48 tests passed and 3 skipped.
+- `pnpm typecheck` and `pnpm lint`: passed.
+- No migration, schema push, production seed, or other production data mutation was run.
+
 ## Phase 2 production activation
 
 - Hosted production auth is active at `https://einherjar-tracker.vercel.app`. The canonical base URL and trusted origin use that exact origin without a trailing slash.
