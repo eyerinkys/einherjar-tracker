@@ -7,7 +7,8 @@
 - The schema uses exact PostgreSQL `numeric` workout loads, generated Better Auth/domain migrations, safe database-check diagnostics, and table-bound live catalog assertions for the Phase 1 contract.
 - The root `.env.local` contains the paired production pooled/direct endpoints. It remains ignored, has restrictive local permissions, and no credential is committed.
 - Production branch `br-dawn-mountain-azrfoy6x` was identified through Neon SQL metadata, confirmed blank, migrated with `0000_windy_beyonder.sql`, rerun safely, and verified through pooled/direct transactions plus the strict live schema check.
-- The database password was pasted into chat. It must be rotated in Neon and both ignored root `.env.local` URLs replaced before deployment or further backend work.
+- The database password previously pasted into chat was rotated. Both ignored root `.env.local` URLs were replaced, and pooled/direct connectivity plus strict production schema integrity passed with the rotated credentials.
+- Neon branch protection is unavailable on the current Free plan. This limitation is accepted for now; avoid destructive production operations and revisit protection if the project moves to a paid plan.
 - Unrelated documentation changes in the main checkout remain user-owned and were not staged by the merge.
 
 ## Completed implementation
@@ -51,7 +52,5 @@
 
 ## Next handoff
 
-1. Rotate the `neondb_owner` password in Neon because it was pasted into chat, then replace both ignored root `.env.local` URLs with the rotated pooled/direct values.
-2. Protect production branch `br-dawn-mountain-azrfoy6x` in the Neon console.
-3. Run `pnpm db:check` without another migration.
-4. Continue with Phase 2.
+1. Continue with Phase 2 of `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md` from the root `main` checkout.
+2. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
