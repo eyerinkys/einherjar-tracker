@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, eq, exists, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { exercises, splitDays, splitExercises, user } from '../../db/schema';
 import type { SplitDay } from '../../types';
@@ -56,9 +56,7 @@ export function requireExactOwnedIdList(
 export function ownedSplitExerciseWhere(userId: string, splitExerciseId: string) {
   return and(
     eq(splitExercises.id, splitExerciseId),
-    exists(
-      sql`select 1 from ${splitDays} where ${splitDays.id} = ${splitExercises.splitDayId} and ${splitDays.userId} = ${userId}`,
-    ),
+    sql`exists (select 1 from ${splitDays} where ${splitDays.id} = ${splitExercises.splitDayId} and ${splitDays.userId} = ${userId})`,
   )!;
 }
 

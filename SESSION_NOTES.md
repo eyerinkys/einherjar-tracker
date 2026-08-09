@@ -137,17 +137,53 @@
 ## Phase 3C verification
 
 - Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
-- Final focused Phase 3C suite: 2 files and 40 tests passed.
+- Final pre-review focused Phase 3C suite: 2 files and 40 tests passed.
 - Full `pnpm test`: 19 files passed, 2 opt-in PostgreSQL files skipped; 134 tests passed and 7 skipped.
 - `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check`: passed.
 - The one required Impeccable detector run returned `[]` at the UI integration checkpoint. Later review fixes were validated with behavior tests, lint, typecheck, and build; the detector was not rerun because the task capped it at one invocation.
-- Local deterministic checks used server-action/query mocks and did not connect to or mutate a database. No migration, push, seed, deployment, or production data mutation was run.
+- The original deterministic gate used server-action/query mocks and did not connect to or mutate a database. Hosted verification was performed later and is recorded below.
 - The final bounded review confirmed the Progress UUID compatibility and pending empty-state guard, with no remaining Critical or Important findings.
-- The required live desktop/mobile walkthrough was not performed: the checkout exposes no disposable full-app database URL and no callable browser tool. Production credentials were deliberately not used for UI mutation tests. A future pass must use a disposable database/auth target to cover all eight operations, refresh persistence, keyboard/focus, mobile/desktop layout, console/network health, and forced failure/retry recovery.
+- A later independent task review found stale-refresh status and inline-cancellation focus defects. Both were fixed in `2ee60c0`; the scoped re-review approved both fixes with no new breakage.
+- Fresh controller verification after `2ee60c0`: the page/Split focused suite passed 44 tests; `pnpm typecheck`, `pnpm lint`, and `git diff --check` passed.
+- Per the user's request, the already-passed full suite, standalone typecheck, and lint gates were not rerun. A fresh Node v24.18.0 production build of current source was required for valid browser evidence and passed; `git diff --check` was rerun only after this handoff edit and passed.
+
+## Hosted Phase 3 verification — 2026-08-09
+
+- Root `.env` resolved without printing credentials to hosted Neon branch `br-dawn-mountain-azrfoy6x`, database `neondb`; `.env.local` did not interfere and was retained.
+- The hosted Drizzle ledger contains one entry whose hash `89ec6ab0f0d728be026182413afcee0f826bde7c14bb621cc192adf49642a6d4` exactly matches `drizzle/0000_windy_beyonder.sql`. Both Split tables exist, so no migration write or schema push was needed.
+- The idempotent built-in exercise seed completed against the hosted database. A field-for-field query verified all nine canonical IDs and attributes: 9 exact rows, 0 missing, 0 mismatched.
+- The two opt-in PostgreSQL files ran under Node v24.18.0 against the hosted database: 4 tests passed and 3 failed. All three ownership tests passed; one Split limit test passed.
+- The other three Split integration tests fail with PostgreSQL `42601` because `ownedSplitExerciseWhere` calls Drizzle `exists(sql\`select ...\`)`, which generates invalid SQL shaped as `... and exists select 1 ...` without subquery parentheses. This blocks exercise update, removal, reorder, and adding after a day already has an exercise.
+- The integration teardown also leaked the two custom `Phase 3B` exercise fixtures: deleting their users sets `created_by_user_id` to null, while teardown deletes only the built-in fixture. The two exact leaked rows were removed; final Phase 2/3 integration fixture users, Split days, and `Phase 3B` exercises were all verified at zero.
+- A source-current Node v24.18.0 production build was used for real Chromium walkthroughs at desktop 1440x1000 and iPhone-emulated 393x659. Both layouts had zero horizontal overflow; the mobile empty-state action cleared the fixed bottom navigation by 84 px.
+- Browser success evidence: create day, rename day, reorder days, first exercise add, and delete day persisted after refresh on both desktop and mobile. Rejected target-set drafts reverted to the stored value after refresh. Keyboard day-tab navigation and focus restoration after rename, dialog close, remove cancellation, and delete cancellation worked.
+- Browser failure evidence matches PostgreSQL: target update, second exercise add (including Retry), exercise reorder, and exercise removal all showed `Unable to update the split. Please try again.` and did not mutate the hosted rows.
+- Both browser sessions reported 0 console errors/warnings; all captured auth, RSC, and server-action requests returned HTTP 200. Screenshots showed the desktop rail and mobile bottom navigation rendering without clipping; mobile controls and dialog remained within the viewport.
+- The scoped browser account and all dependent auth/session/Split rows were deleted. Final counts for that user, accounts, sessions, Split days, and leaked `Phase 3B` exercises were zero. Temporary browser, screenshot, launcher, and generated agent-rule files were removed.
+- Those failures were repaired and reverified in the closeout below; this section remains as the original failure record.
+
+## Hosted Phase 3 closeout — 2026-08-09
+
+- Added a focused SQL-generation regression assertion first and observed it fail against the malformed `exists select 1 ...` output. `ownedSplitExerciseWhere` now emits a parameterized correlated `exists (select 1 ...)` expression while retaining both the Split-exercise ID and owning-user predicates; the focused unit file then passed 9/9 tests.
+- The Split PostgreSQL teardown now deletes both exact custom exercise fixture IDs before deleting their users, preventing `ON DELETE SET NULL` from orphaning those rows.
+- Reran only the two opt-in PostgreSQL files under Node v24.18.0 against the root `.env` hosted Neon target: 2 files passed, 7 tests passed, 0 skipped, 0 failed. A follow-up hosted query returned 0 Phase 2/3 fixture users, 0 fixture Split days, and 0 `Phase 3B` fixture exercises.
+- Built current source once because the changed Server Action code had to be present for browser verification. The Node v24.18.0 webpack production build compiled, completed TypeScript, and generated all 6 pages successfully. No standalone typecheck, lint, unrelated full suite, or already-passed day-operation browser checks were rerun.
+- On real headless Chromium at desktop 1440x1000 and iPhone 15 emulation 393x659, repeated only the four formerly failing operations. Target update, second exercise add, exercise reorder, and exercise removal all reconciled successfully and persisted after refresh on both viewports. Both sessions ended with 0 console errors and 0 warnings.
+- The browser walkthrough used one exact temporary allowlisted account and a directly seeded one-day/one-exercise setup so already-verified setup operations were not repeated. The account was deleted afterward; hosted read-back confirmed 0 users, accounts, sessions, Split days, and verification rows for it.
+- Phase 3 is closed: hosted migration/seed parity is confirmed, all 7 PostgreSQL ownership/transaction tests pass, all 8 Split mutations have real desktop/mobile persistence evidence, and no verification fixtures remain.
+
+## Hosted database authorization — 2026-08-09
+
+- The user explicitly ended disposable-database usage for this project because it consumes too much time and tokens.
+- From this point forward, use the hosted database for implementation and verification whenever database access is needed, including Phase 3 closeout and later phases.
+- The ignored root `.env` is the authoritative credential source. Do not create another disposable Neon branch or wait for a disposable database URL.
+- `.env.local` may be deleted if it interferes with loading `.env`, but deletion is not required merely because both files exist. Prefer explicitly preloading `.env`; if `.env.local` is removed, record that deletion and confirm no credential is committed.
+- This is explicit authorization to run the necessary reviewed migration, seed, integration-test fixture, and browser-verification operations against the hosted database. Keep operations scoped, avoid destructive resets, clean up test fixtures, and continue to distinguish hosted verification from deployment.
+- Hosted verification has now been performed as recorded above; it did not deploy application code or reset/delete the hosted branch.
+- Current Phase 3 implementation commits are `702aaaa`, `7a79066`, `957a9cf`, `2e5aa40`, `e008530`, and `2ee60c0`. The current scoped closeout changes are the Split ownership predicate, its SQL regression assertion, the integration fixture teardown, and this handoff; the pre-existing `RULES.md` edit remains preserved.
 
 ## Next handoff
 
-1. Complete the Phase 3C desktop/mobile operation matrix only after providing a disposable, non-production full-application database and disposable auth account; do not reuse the configured production credentials.
-2. Create the two allowlisted accounts through the live sign-up page when authorized; do not share either password.
-3. Continue with the next approved persistence phase after the Phase 3C browser remainder is recorded.
-4. Keep production branch `br-dawn-mountain-azrfoy6x` as the configured target and do not reset or delete it.
+1. Begin Phase 4 — Workout Logging from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`, starting with 4A start/resume/discard lifecycle.
+2. Continue using hosted branch `br-dawn-mountain-azrfoy6x` through the ignored root `.env`; do not create a disposable database branch or reset/delete the hosted branch.
+3. Preserve the closed Phase 3 evidence above. Rerun Phase 3 checks only when a later change touches those ownership, transaction, or Split UI paths.

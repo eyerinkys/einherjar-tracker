@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from 'ws';
 import * as schema from '../../db/schema';
@@ -105,6 +105,9 @@ describe.runIf(Boolean(connectionString && integrationEnabled))(
             eq(exercises.id, builtInExerciseId),
           ),
         );
+      await database
+        .delete(exercises)
+        .where(inArray(exercises.id, [firstCustomExerciseId, secondCustomExerciseId]));
       await database.delete(user).where(eq(user.id, firstUserId));
       await database.delete(user).where(eq(user.id, secondUserId));
       await pool.end();

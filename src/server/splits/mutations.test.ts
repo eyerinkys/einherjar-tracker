@@ -39,6 +39,7 @@ describe('split mutation invariants', () => {
     );
 
     expect(query.sql).toContain('"split_exercises"."id" = $1');
+    expect(query.sql).toContain('exists (select 1 from "split_days"');
     expect(query.sql).toContain('"split_days"."id" = "split_exercises"."split_day_id"');
     expect(query.sql).toContain('"split_days"."user_id" = $2');
     expect(query.params).toEqual([firstId, 'trusted-user']);
