@@ -16,7 +16,7 @@ const RATE_LIMIT_RETRY_SECONDS = 60 * 5; // 5 mins for rate limits
 
 function calculateRetryTime(error: any): Date {
   const now = new Date();
-  if (error instanceof GroqClientError && error.status === 429) {
+  if ((error.name === 'GroqClientError' || error instanceof GroqClientError) && error.status === 429) {
     return new Date(now.getTime() + RATE_LIMIT_RETRY_SECONDS * 1000);
   }
   return new Date(now.getTime() + RETRY_AFTER_SECONDS * 1000);
@@ -24,10 +24,10 @@ function calculateRetryTime(error: any): Date {
 
 function determineFailureCode(error: any): string {
   if (error.name === 'AbortError') return 'timeout';
-  if (error instanceof GroqClientError) {
+  if (error.name === 'GroqClientError' || error instanceof GroqClientError) {
     if (error.status === 429) return 'rate_limited';
     if (error.status && error.status >= 500) return 'provider_error';
-    if (error.message.includes('parse')) return 'invalid_json';
+    if (error.message && error.message.includes('parse')) return 'invalid_json';
     return 'invalid_response';
   }
   return 'network_error';
