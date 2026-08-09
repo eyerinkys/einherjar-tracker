@@ -1,12 +1,10 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { getExerciseWorkoutHistory } from '@/actions/history';
-import {
-  getExerciseProgression,
-  getAIInsightForExercise,
-  getAchievedPRs,
-} from '@/services/dataService';
+import { deriveWorkoutFacts } from '@/lib/progression/facts';
+import { derivePersonalRecords } from '@/lib/progression/records';
+import { classifyProgression } from '@/lib/progression/classification';
 import type { Exercise, ExerciseHistory } from '@/types';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { RuneBadge } from '@/components/ui/RuneBadge';
@@ -40,18 +38,6 @@ function formatLoad(weight: number | null, reps: number): string {
   return `${weight === null ? 'Bodyweight' : `${numberFormatter.format(weight)}kg`} × ${reps}`;
 }
 
-const LEGACY_PROGRESS_ID_BY_BUILT_IN_ID: Readonly<Record<string, string>> = {
-  '00000000-0000-4000-8000-000000000001': 'ex-1',
-  '00000000-0000-4000-8000-000000000002': 'ex-2',
-  '00000000-0000-4000-8000-000000000003': 'ex-3',
-  '00000000-0000-4000-8000-000000000004': 'ex-4',
-  '00000000-0000-4000-8000-000000000005': 'ex-5',
-  '00000000-0000-4000-8000-000000000006': 'ex-6',
-  '00000000-0000-4000-8000-000000000007': 'ex-7',
-  '00000000-0000-4000-8000-000000000008': 'ex-8',
-  '00000000-0000-4000-8000-000000000009': 'ex-9',
-};
-
 export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercises, initialExerciseHistory }) => {
   const [selectionState, setSelectionState] = useState(() => ({
     source: initialExerciseHistory,
@@ -74,17 +60,28 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
   const requestId = useRef(0);
 
   const currentExercise = exercises.find((e) => e.id === selectedExerciseId) || exercises[0];
-  const progressExerciseId =
-    LEGACY_PROGRESS_ID_BY_BUILT_IN_ID[currentExercise?.id ?? ''] ?? currentExercise?.id ?? '';
-  const chartData = getExerciseProgression(progressExerciseId);
-  const aiInsight = getAIInsightForExercise(progressExerciseId);
-  const achievedPRs = getAchievedPRs().filter((pr) => pr.exerciseId === progressExerciseId);
-
-  const achievedPRWeight = chartData.length > 0 ? Math.max(...chartData.map((d) => d.weight), 0) : (achievedPRs[0]?.weight || 0);
-  const max1RM = chartData.length > 0 ? Math.max(...chartData.map((d) => d.estimated1RM), 0) : (achievedPRs[0]?.estimated1RM || 0);
   const displayedHistory = settledHistory?.exercise.id === currentExercise?.id
     ? settledHistory
     : null;
+
+  const facts = useMemo(() => (displayedHistory ? deriveWorkoutFacts(displayedHistory) : null), [displayedHistory]);
+  const prs = useMemo(() => (facts ? derivePersonalRecords(facts) : null), [facts]);
+  const classification = useMemo(() => (facts ? classifyProgression(facts) : null), [facts]);
+
+  const highestLoadPR = prs?.current.highestLoad ?? null;
+  const estimated1RMPR = prs?.current.estimated1RM ?? null;
+  const achievedPRWeight = highestLoadPR ? numberFormatter.format(highestLoadPR.loadKg) : null;
+  const max1RM = estimated1RMPR ? `${numberFormatter.format(estimated1RMPR.estimated1RMKg)} kg` : null;
+  const recordDate = highestLoadPR?.achievedAt ?? estimated1RMPR?.achievedAt ?? null;
+
+  const chartData = useMemo(() => {
+    if (!facts || facts.facts.length === 0) return [];
+    return facts.facts.map((fact) => ({
+      date: localDateFormatter.format(new Date(fact.completedAt)),
+      weight: fact.metrics.workingLoadKg ?? 0,
+      estimated1RM: fact.metrics.bestEstimated1RMKg ?? 0,
+    }));
+  }, [facts]);
 
   const loadExerciseHistory = async (exerciseId: string) => {
     const currentRequestId = ++requestId.current;
@@ -138,10 +135,10 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
           )}
         </div>
 
-        {aiInsight && <RuneBadge status={aiInsight.status} />}
+        <RuneBadge status={classification?.status ?? 'INSUFFICIENT_DATA'} />
       </div>
 
-      {chartData.length === 0 && !aiInsight ? (
+      {displayedHistory?.sessions.length === 0 ? (
         <EmptyState
           title={`No Progression Data for ${currentExercise?.name || 'Exercise'}`}
           description="Insufficient logged sessions to compute objective progressive overload indicators or generate AI insights."
@@ -165,12 +162,14 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
 
               <div className="pt-2 flex items-baseline justify-between font-mono">
                 <div>
-                  <span className="text-3xl font-bold text-[#DFD0B8]">{achievedPRWeight}</span>
-                  <span className="text-sm text-[#948979] ml-1">kg</span>
+                  <span className="text-3xl font-bold text-[#DFD0B8]">{achievedPRWeight ?? (displayedHistory && displayedHistory.sessions.length > 0 ? 'Bodyweight' : '--')}</span>
+                  {achievedPRWeight && <span className="text-sm text-[#948979] ml-1">kg</span>}
                 </div>
                 <div className="text-right text-xs text-[#948979]">
-                  <div>Estimated 1RM: <strong className="text-[#DFD0B8]">{max1RM} kg</strong></div>
-                  <div className="text-[11px] text-[#635B50]">Inscribed in Ledger</div>
+                  <div>Estimated 1RM: <strong className="text-[#DFD0B8]">{max1RM ?? '--'}</strong></div>
+                  <div className="text-[11px] text-[#635B50]">
+                    {recordDate ? `Inscribed ${localDateFormatter.format(new Date(recordDate))}` : 'Inscribed in Ledger'}
+                  </div>
                 </div>
               </div>
             </RunePanel>
@@ -182,91 +181,87 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
                   <Sparkles className="w-4 h-4 text-[#8DAA91]" />
                   <span className="font-bold uppercase tracking-wider">Probable Next PR (Prediction)</span>
                 </div>
-                {aiInsight && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[#1A3636] border border-[#677D6A] text-[#8DAA91] uppercase">
-                    {aiInsight.confidence} CONFIDENCE
-                  </span>
-                )}
+                <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[#1F242D] border border-[#393E46] text-[#948979] uppercase">
+                  UNAVAILABLE
+                </span>
               </div>
 
               <div className="pt-2 flex items-baseline justify-between font-mono">
                 <div>
-                  <span className="text-3xl font-bold text-[#8DAA91]">
-                    {aiInsight?.probableNextPR.weight || achievedPRWeight}
-                  </span>
-                  <span className="text-sm text-[#677D6A] ml-1">kg</span>
-                  <span className="text-xs text-[#948979] ml-2">× {aiInsight?.probableNextPR.reps} reps</span>
+                  <span className="text-3xl font-bold text-[#635B50]">--</span>
+                  <span className="text-sm text-[#635B50] ml-1">kg</span>
                 </div>
                 <div className="text-right text-xs text-[#948979]">
-                  <div>Predicted Step: <strong className="text-[#8DAA91]">+{ (aiInsight?.nextWeight || 0) - achievedPRWeight } kg</strong></div>
-                  <div className="text-[11px] text-[#677D6A] font-semibold">NOT YET ACHIEVED</div>
+                  <div>Predicted Step: <strong className="text-[#635B50]">--</strong></div>
+                  <div className="text-[11px] text-[#635B50] font-semibold">AI LAYER PENDING (PHASE 8)</div>
                 </div>
               </div>
             </RunePanel>
           </div>
 
           {/* Odin's Eye AI Insight Box */}
-          {aiInsight && (
-            <RunePanel variant="carved" className="p-5 space-y-4 border-[#677D6A]/80 shadow-[0_4px_24px_rgba(26,54,54,0.3)]">
-              <div className="flex items-center gap-3 border-b border-[#393E46] pb-3">
-                <InsightEye size={36} />
-                <div>
-                  <h3 className="font-mono text-sm font-bold text-[#DFD0B8] tracking-wider uppercase">
-                    ODIN INSIGHT & OVERLOAD GUIDANCE
-                  </h3>
-                  <p className="font-mono text-[11px] text-[#948979]">
-                    Structured training context interpretation
-                  </p>
+          <RunePanel variant="carved" className="p-5 space-y-4 border-[#677D6A]/80 shadow-[0_4px_24px_rgba(26,54,54,0.3)]">
+            <div className="flex items-center gap-3 border-b border-[#393E46] pb-3">
+              <InsightEye size={36} />
+              <div>
+                <h3 className="font-mono text-sm font-bold text-[#DFD0B8] tracking-wider uppercase">
+                  ODIN INSIGHT & OVERLOAD GUIDANCE
+                </h3>
+                <p className="font-mono text-[11px] text-[#948979]">
+                  Structured training context interpretation
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
+              {/* Section 1: Objective Calculated Progression */}
+              <div className="bg-[#161A20] p-3 rounded-xs border border-[#393E46] space-y-2">
+                <div className="flex items-center gap-1.5 text-[#C9A96E] font-bold text-[11px] uppercase border-b border-[#2C323B] pb-1">
+                  <Calculator className="w-3.5 h-3.5" />
+                  <span>1. Calculated Progression</span>
+                </div>
+                <div className="text-[#DFD0B8] leading-relaxed">
+                  {classification?.explanation ?? 'Insufficient logged sessions to compute objective progressive overload indicators.'}
+                </div>
+                {classification?.evidence.latestMetrics && (
+                  <div className="text-[11px] text-[#948979] pt-1">
+                    <div>Last: <span className="text-[#DFD0B8]">{formatLoad(classification.evidence.latestWorkingLoadKg, classification.evidence.latestMetrics.totalPlannedReps)}</span></div>
+                    {classification.evidence.previousMetrics && (
+                      <div>Prev: <span className="text-[#DFD0B8]">{formatLoad(classification.evidence.previousWorkingLoadKg, classification.evidence.previousMetrics.totalPlannedReps)}</span></div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Section 2: AI-Assisted Recommendation */}
+              <div className="bg-[#161A20] p-3 rounded-xs border border-[#393E46] space-y-2">
+                <div className="flex items-center gap-1.5 text-[#8DAA91] font-bold text-[11px] uppercase border-b border-[#2C323B] pb-1">
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>2. AI Recommendation</span>
+                </div>
+                <div className="text-[#948979] font-semibold leading-relaxed">
+                  &quot;AI guidance unavailable&quot;
+                </div>
+                <div className="text-[11px] text-[#635B50] pt-1">
+                  Groq AI overload guidance model is not active (Phase 8).
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
-                {/* Section 1: Objective Calculated Progression */}
-                <div className="bg-[#161A20] p-3 rounded-xs border border-[#393E46] space-y-2">
-                  <div className="flex items-center gap-1.5 text-[#C9A96E] font-bold text-[11px] uppercase border-b border-[#2C323B] pb-1">
-                    <Calculator className="w-3.5 h-3.5" />
-                    <span>1. Calculated Progression</span>
-                  </div>
-                  <div className="text-[#DFD0B8] leading-relaxed">
-                    {aiInsight.comparisonText}
-                  </div>
-                  <div className="text-[11px] text-[#948979] pt-1">
-                    <div>Last: <span className="text-[#DFD0B8]">{aiInsight.lastSessionReps}</span></div>
-                    <div>Prev: <span className="text-[#DFD0B8]">{aiInsight.previousSessionReps}</span></div>
-                  </div>
+              {/* Section 3: Predicted Future PR */}
+              <div className="bg-[#161A20] p-3 rounded-xs border border-dashed border-[#677D6A] space-y-2">
+                <div className="flex items-center gap-1.5 text-[#8DAA91] font-bold text-[11px] uppercase border-b border-[#2C323B] pb-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>3. Predicted Future PR</span>
                 </div>
-
-                {/* Section 2: AI-Assisted Recommendation */}
-                <div className="bg-[#161A20] p-3 rounded-xs border border-[#393E46] space-y-2">
-                  <div className="flex items-center gap-1.5 text-[#8DAA91] font-bold text-[11px] uppercase border-b border-[#2C323B] pb-1">
-                    <Cpu className="w-3.5 h-3.5" />
-                    <span>2. AI Recommendation</span>
-                  </div>
-                  <div className="text-[#8DAA91] font-semibold leading-relaxed">
-                    &quot;{aiInsight.guidance}&quot;
-                  </div>
-                  <div className="text-[11px] text-[#948979] pt-1">
-                    <span className="text-[#DFD0B8] font-semibold">Why: </span>
-                    {aiInsight.reasoning}
-                  </div>
+                <div className="text-xl font-bold text-[#635B50]">
+                  Prediction Unavailable
                 </div>
-
-                {/* Section 3: Predicted Future PR */}
-                <div className="bg-[#161A20] p-3 rounded-xs border border-dashed border-[#677D6A] space-y-2">
-                  <div className="flex items-center gap-1.5 text-[#8DAA91] font-bold text-[11px] uppercase border-b border-[#2C323B] pb-1">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>3. Predicted Future PR</span>
-                  </div>
-                  <div className="text-xl font-bold text-[#8DAA91]">
-                    {aiInsight.probableNextPR.weight} kg × {aiInsight.probableNextPR.reps} reps
-                  </div>
-                  <p className="text-[10px] text-[#948979] italic leading-tight">
-                    *Prediction based on working set rep velocity and calculated estimated 1RM trajectory.
-                  </p>
-                </div>
+                <p className="text-[10px] text-[#635B50] italic leading-tight">
+                  *Structured AI predictions will be generated when Groq integration is enabled in Phase 8.
+                </p>
               </div>
-            </RunePanel>
-          )}
+            </div>
+          </RunePanel>
 
           {/* Progression Recharts Chart */}
           {chartData.length > 0 && (
@@ -316,6 +311,7 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
           )}
         </>
       )}
+
 
       {currentExercise ? (
         <section className="min-w-0 space-y-4" aria-labelledby="exercise-history-heading">

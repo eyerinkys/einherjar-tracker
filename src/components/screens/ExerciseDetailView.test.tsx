@@ -63,9 +63,10 @@ describe('factual per-exercise history', () => {
     expect(screen.getByText('Ring Row Day Snapshot')).toBeTruthy();
     expect(screen.getByText('Ring Row Snapshot')).toBeTruthy();
     expect(screen.getByText('Target: 1×8–12')).toBeTruthy();
-    expect(screen.getByText('Bodyweight × 12')).toBeTruthy();
+    expect(screen.getAllByText('Bodyweight × 12').length).toBeGreaterThan(0);
     expect(screen.getByText('Historical setup note')).toBeTruthy();
   });
+
 
   it('loads the newly selected exercise through the authenticated action', async () => {
     getExerciseWorkoutHistory.mockResolvedValue({ ok: true, data: history(exercises[1], '2') });
@@ -154,4 +155,71 @@ describe('factual per-exercise history', () => {
     expect(screen.getByText('Split Squat Day Snapshot')).toBeTruthy();
     expect((selector as HTMLSelectElement).value).toBe(exercises[2].id);
   });
+
+  it('renders real Phase 6 progression status, achieved PR facts, and deterministic explanation for multi-session history', () => {
+    const multiSessionHistory: ExerciseHistory = {
+      exercise: exercises[0],
+      sessions: [
+        {
+          sessionId: id('s1'),
+          sessionExerciseId: id('se1'),
+          splitDayName: 'Ring Row Day 1',
+          startedAt: '2026-08-01T10:00:00.000Z',
+          completedAt: '2026-08-01T11:00:00.000Z',
+          durationMinutes: 60,
+          exerciseName: 'Ring Row',
+          targetSets: 2,
+          targetRepMin: 8,
+          targetRepMax: 10,
+          notes: null,
+          sets: [
+            { id: id('set1'), setNumber: 1, weight: 80, reps: 8 },
+            { id: id('set2'), setNumber: 2, weight: 80, reps: 8 },
+          ],
+        },
+        {
+          sessionId: id('s2'),
+          sessionExerciseId: id('se2'),
+          splitDayName: 'Ring Row Day 2',
+          startedAt: '2026-08-05T10:00:00.000Z',
+          completedAt: '2026-08-05T11:00:00.000Z',
+          durationMinutes: 60,
+          exerciseName: 'Ring Row',
+          targetSets: 2,
+          targetRepMin: 8,
+          targetRepMax: 10,
+          notes: null,
+          sets: [
+            { id: id('set3'), setNumber: 1, weight: 80, reps: 10 },
+            { id: id('set4'), setNumber: 2, weight: 80, reps: 10 },
+          ],
+        },
+      ],
+    };
+
+    render(<ExerciseDetailView exercises={exercises} initialExerciseHistory={multiSessionHistory} />);
+
+    // 1. Status badge should be READY FOR LOAD + (from READY_TO_INCREASE_LOAD status)
+    expect(screen.getByText('READY FOR LOAD +')).toBeTruthy();
+
+    // 2. Achieved PR Fact card should display 80 kg and estimated 1RM 106.7 kg (80 * (1 + 10/30) = 106.666...)
+    expect(screen.getByText('80')).toBeTruthy();
+    expect(screen.getByText('106.7 kg')).toBeTruthy();
+
+    // 3. Calculated progression panel should render Phase 6 explanation text
+    expect(screen.getByText('All 2 planned sets reached the 10-rep target at 80 kg.')).toBeTruthy();
+
+    // 4. Prediction panel should show honest UNAVAILABLE / PENDING state
+    expect(screen.getByText('UNAVAILABLE')).toBeTruthy();
+    expect(screen.getByText(/AI guidance unavailable/)).toBeTruthy();
+  });
+
+
+  it('renders INSUFFICIENT DATA status and explanation for single-session history', () => {
+    render(<ExerciseDetailView exercises={exercises} initialExerciseHistory={history(exercises[0], '1', 50)} />);
+
+    expect(screen.getByText('INSUFFICIENT DATA')).toBeTruthy();
+    expect(screen.getByText('At least two completed sessions are required; found 1.')).toBeTruthy();
+  });
 });
+
