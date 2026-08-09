@@ -78,6 +78,27 @@ describe('factual per-exercise history', () => {
     expect(screen.queryByText('Ring Row Day Snapshot')).toBeNull();
   });
 
+  it('reconciles a selected non-initial exercise to refreshed first-exercise history without indefinite loading', async () => {
+    const refreshedFirstHistory = history(exercises[0], '4');
+    refreshedFirstHistory.sessions[0].splitDayName = 'Refreshed Ring Row Day';
+    getExerciseWorkoutHistory.mockResolvedValue({ ok: true, data: history(exercises[1], '2') });
+    const view = render(
+      <ExerciseDetailView exercises={exercises} initialExerciseHistory={history(exercises[0], '1')} />,
+    );
+
+    await userEvent.selectOptions(screen.getByRole('combobox'), exercises[1].id);
+    expect(await screen.findByText('Push-up Day Snapshot')).toBeTruthy();
+
+    view.rerender(
+      <ExerciseDetailView exercises={exercises} initialExerciseHistory={refreshedFirstHistory} />,
+    );
+
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe(exercises[0].id);
+    expect(screen.getByText('Refreshed Ring Row Day')).toBeTruthy();
+    expect(screen.queryByText(/Loading completed history/)).toBeNull();
+    expect(screen.queryByText('Push-up Day Snapshot')).toBeNull();
+  });
+
   it('renders an honest selected-exercise empty state', async () => {
     getExerciseWorkoutHistory.mockResolvedValue({ ok: true, data: { exercise: exercises[1], sessions: [] } });
     render(<ExerciseDetailView exercises={exercises} initialExerciseHistory={history(exercises[0], '1')} />);

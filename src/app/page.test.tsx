@@ -306,7 +306,7 @@ describe('protected application hydration', () => {
     expect(await screen.findByRole('tab', { name: /Persistent Pull/ })).toBeTruthy();
   });
 
-  it('reconciles refreshed completed and exercise history props in the application shell', async () => {
+  it('reconciles refreshed completed-history props in the application shell', async () => {
     const refreshedHistory = {
       sessions: [{ ...initialHistoryPage.sessions[0], id: '00000000-0000-4000-8000-000000000050', splitDayName: 'Newly Completed Session' }],
       nextCursor: null,

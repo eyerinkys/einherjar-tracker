@@ -53,7 +53,13 @@ const LEGACY_PROGRESS_ID_BY_BUILT_IN_ID: Readonly<Record<string, string>> = {
 };
 
 export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercises, initialExerciseHistory }) => {
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string>(exercises[0]?.id || '');
+  const [selectionState, setSelectionState] = useState(() => ({
+    source: initialExerciseHistory,
+    value: exercises[0]?.id ?? '',
+  }));
+  const selectedExerciseId = selectionState.source === initialExerciseHistory
+    ? selectionState.value
+    : (initialExerciseHistory?.exercise.id ?? exercises[0]?.id ?? '');
   const [historyState, setHistoryState] = useState(() => ({
     source: initialExerciseHistory,
     value: initialExerciseHistory,
@@ -100,7 +106,7 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
   };
 
   const selectExercise = (exerciseId: string) => {
-    setSelectedExerciseId(exerciseId);
+    setSelectionState({ source: initialExerciseHistory, value: exerciseId });
     void loadExerciseHistory(exerciseId);
   };
 

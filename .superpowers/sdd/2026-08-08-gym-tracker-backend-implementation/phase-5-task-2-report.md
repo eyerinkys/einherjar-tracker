@@ -206,3 +206,96 @@ There were no detector findings to fix.
 ## Concerns
 
 No blocking concern. Browser/hosted verification was deliberately not run because the task prohibited hosted-data access and the requested gate was local tests, detector, typecheck, lint, build, and diff validation. The fixed `en-GB` display language keeps ledger dates concise while `Intl.DateTimeFormat` still resolves the viewer's local time zone; broader locale selection remains outside this phase.
+
+## Fix Round 1 — refreshed non-initial exercise selection
+
+### Reviewer finding
+
+A non-initial exercise could remain selected after `initialExerciseHistory` refreshed to the authoritative first exercise. The history source/value state correctly resolved to the refreshed prop, but the independent raw selection state still named the non-initial exercise. No history then matched the selected label, and the fallback loading state had no request that could settle it.
+
+### RED
+
+Added a rendered-behavior regression that:
+
+1. hydrates the first exercise;
+2. selects and successfully settles a second exercise through the authenticated action boundary;
+3. rerenders with refreshed authoritative first-exercise history props; and
+4. requires the selector and ledger to reconcile to that refreshed exercise with no loading state or stale second-exercise content.
+
+Command:
+
+```text
+PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm test src/components/screens/ExerciseDetailView.test.tsx
+```
+
+RED result:
+
+```text
+1 file run
+1 failed, 6 passed
+Expected first exercise ID after refresh; received the still-selected second exercise ID
+```
+
+The failure was the reviewed defect, not a setup or syntax error.
+
+### Implementation
+
+- Replaced the raw selected-exercise string state with the same source/value pattern already used by factual history.
+- User selection remains local while `initialExerciseHistory` retains its identity.
+- When a server refresh supplies a new authoritative first-exercise history prop, the derived selection and factual ledger reset together to that exercise.
+- No prop-derived effect or extra history request was added.
+- The existing monotonically increasing request-ID checks remain unchanged. A response from a request started before refresh cannot become visible under the reconciled first-exercise selection because its stored source no longer matches the current server prop.
+- Renamed the older page test to accurately state that it covers completed-history reconciliation; the new component regression now explicitly owns exercise-history reconciliation coverage.
+
+Files changed:
+
+- `src/components/screens/ExerciseDetailView.tsx`
+- `src/components/screens/ExerciseDetailView.test.tsx`
+- `src/app/page.test.tsx`
+- `SESSION_NOTES.md`
+- `.superpowers/sdd/2026-08-08-gym-tracker-backend-implementation/phase-5-task-2-report.md`
+
+### GREEN and verification
+
+Focused GREEN:
+
+```text
+PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm test src/components/screens/ExerciseDetailView.test.tsx
+1 file passed, 7 tests passed
+```
+
+Covering UI/page tests, including the existing stale-response race:
+
+```text
+PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm test src/app/page.test.tsx src/components/app/ApplicationShell.test.tsx src/components/screens/ExerciseDetailView.test.tsx
+3 files passed, 18 tests passed
+```
+
+Static gates:
+
+```text
+PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm typecheck
+tsc --noEmit
+exit 0
+
+PATH=/tmp/einherjar-node24/node_modules/node/bin:$PATH pnpm lint
+eslint
+exit 0
+
+git diff --check
+exit 0, no output
+```
+
+The build was not rerun because the fix changes only client-local state derivation and does not touch a server/client boundary, action signature, serialized prop, or build configuration. The Impeccable detector was not rerun because its one permitted invocation was already consumed by the original task.
+
+### Self-review
+
+- The selected exercise and displayed factual history now share one authoritative refresh source, so they cannot drift into a label/content mismatch after refreshed props.
+- Normal user selection behavior is unchanged until a server refresh occurs.
+- Refresh policy is explicit and deterministic: reconcile to the refreshed initial exercise instead of silently preserving stale non-initial content.
+- No action input, authentication, ownership, pagination, date formatting, styling, or later-phase mock boundary changed.
+- Existing slow-response ordering coverage remains green, and pre-refresh action responses remain unable to overwrite the refreshed visible exercise.
+
+### Concerns
+
+No blocking concern. The timezone-dependent date-test observation remains a deferred Minor exactly as requested and was not changed in this fix round.
