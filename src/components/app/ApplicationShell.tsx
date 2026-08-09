@@ -56,7 +56,7 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl overflow-y-auto">
           {activeTab === 'home' ? (
-            <HomeDashboard data={initialHomeDashboardData} />
+            <HomeDashboard data={initialHomeDashboardData} onConfigureSchedule={() => setActiveTab('split')} />
           ) : null}
 
           {activeTab === 'split' ? (

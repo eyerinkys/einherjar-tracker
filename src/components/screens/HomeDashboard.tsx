@@ -9,9 +9,10 @@ import { EmptyState } from '../ui/EmptyState';
 
 interface HomeDashboardProps {
   data: HomeDashboardDTO;
+  onConfigureSchedule?: () => void;
 }
 
-export const HomeDashboard: React.FC<HomeDashboardProps> = ({ data }) => {
+export const HomeDashboard: React.FC<HomeDashboardProps> = ({ data, onConfigureSchedule }) => {
   const { metrics, heatmap, nextWorkout, recentActivity, progressionSnapshot, aiInsight } = data;
 
   if (!metrics.hasSchedule) {
@@ -22,7 +23,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ data }) => {
           title="No Training Schedule"
           description="You haven't set up your training days yet. Set a schedule to track your consistency and build a streak."
           actionLabel="Configure Schedule"
-          onAction={() => window.location.href = '/settings/schedule'}
+          onAction={onConfigureSchedule}
         />
       </div>
     );
