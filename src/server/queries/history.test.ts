@@ -256,6 +256,39 @@ describe('previous performance selection', () => {
     expect(dto.get(exerciseId)).toEqual([{ weight: 82.5, reps: 8 }]);
   });
 
+  it('selects the latest completed unweighted session instead of falling back to an older weighted session', async () => {
+    const latestSessionId = id('9');
+    const read = adapter({
+      listPreviousPerformance: async () => [
+        candidate({
+          workoutSessionId: latestSessionId,
+          sessionExerciseId: id('90'),
+          weight: null,
+          reps: 12,
+        }),
+        candidate({
+          workoutSessionId: id('8'),
+          sessionExerciseId: id('80'),
+          completedAt: new Date('2026-08-08T03:59:00.000Z'),
+          weight: '40',
+          reps: 10,
+        }),
+      ],
+    });
+
+    const selected = await getPreviousPerformanceRowsByExercise(
+      'trusted', id('999'), activeStartedAt, [exerciseId], read,
+    );
+    expect(selected.get(exerciseId)).toEqual([
+      expect.objectContaining({ workoutSessionId: latestSessionId, weight: null, reps: 12 }),
+    ]);
+
+    const dto = await getPreviousPerformanceByExercise(
+      'trusted', id('999'), activeStartedAt, [exerciseId], read,
+    );
+    expect(dto.get(exerciseId)).toEqual([{ weight: null, reps: 12 }]);
+  });
+
   it('binds every exclusion and requested exercise to the database predicate', () => {
     const where = previousPerformanceWhere(
       'trusted', id('999'), activeStartedAt, [exerciseId],

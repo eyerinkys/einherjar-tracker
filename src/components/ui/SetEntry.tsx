@@ -5,7 +5,7 @@ import { Check, Minus, Plus, Trash2 } from 'lucide-react';
 
 interface SetEntryProps {
   set: ActiveWorkoutSet;
-  previousSet?: { weight: number; reps: number };
+  previousSet?: { weight: number | null; reps: number };
   disabled?: boolean;
   canRemove?: boolean;
   onRemove: () => void;

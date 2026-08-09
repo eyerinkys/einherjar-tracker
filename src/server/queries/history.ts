@@ -76,7 +76,6 @@ export interface PreviousPerformanceRow {
 
 export type SelectedPreviousPerformanceRow = PreviousPerformanceRow & {
   exerciseId: string;
-  weight: string;
   reps: number;
 };
 
@@ -319,7 +318,6 @@ export async function getPreviousPerformanceRowsByExercise(
       && row.isCompleted
       && row.exerciseId !== null
       && requested.has(row.exerciseId)
-      && row.weight !== null
       && row.reps !== null,
     )
     .sort((left, right) =>
@@ -355,7 +353,10 @@ export async function getPreviousPerformanceByExercise(
   );
   return new Map([...selected].map(([exerciseId, rows]) => [
     exerciseId,
-    rows.map((row) => ({ weight: Number(row.weight), reps: row.reps })),
+    rows.map((row) => ({
+      weight: row.weight === null ? null : Number(row.weight),
+      reps: row.reps,
+    })),
   ]));
 }
 

@@ -105,3 +105,73 @@ None blocking.
 
 - The normal suite intentionally skips the existing opt-in PostgreSQL files, and this task did not access hosted data. Drizzle SQL construction is covered deterministically; a live read-only integration can be added later only if actual PostgreSQL behavior exposes a gap.
 - This task establishes server contracts only. Connecting `HistoryView` and `ExerciseDetailView` to these actions remains the subsequent Phase 5 UI integration task.
+
+## Fix Round 1 — Nullable previous weights and gapped set numbers
+
+### Findings addressed
+
+1. Previous-performance eligibility incorrectly required `weight !== null`. A latest valid completed bodyweight/unweighted session could therefore disappear before session-exercise selection, allowing an older weighted session to be selected.
+2. Start-workout draft prefill consumed selected rows by dense array index even though the rows retain their stored `setNumber`. If prior set 1 was incomplete and prior set 2 was completed, set 2 was copied into new set 1.
+
+### Changes
+
+- `PreviousPerformanceSet.weight` now explicitly supports `number | null`.
+- The canonical selector chooses the latest eligible completed session exercise independently of weight nullability; it still requires a completed set with non-null reps.
+- DTO mapping preserves `NULL` weights as `null` and converts only non-null PostgreSQL numeric text to frontend numbers.
+- Added `buildInitialDraftSets`, which keys selected raw rows by stored `setNumber` and fills each target slot from the matching prior position. Missing positions retain the default null weight and target-minimum reps.
+- The start-workout transaction now uses that helper, preserving set gaps and exact PostgreSQL numeric text.
+- Widened only the existing `SetEntry` previous-set prop type to accept nullable weight so the corrected backend contract typechecks. No UI markup, rendering branch, interaction, styling, navigation, or screen behavior changed.
+
+### Files
+
+- `src/server/queries/history.test.ts`
+- `src/server/queries/history.ts`
+- `src/server/workouts/mutations.test.ts`
+- `src/server/workouts/mutations.ts`
+- `src/types/workout.ts`
+- `src/components/ui/SetEntry.tsx` — type-boundary adjustment only.
+- `.superpowers/sdd/2026-08-08-gym-tracker-backend-implementation/phase-5-task-1-report.md`
+
+### TDD RED evidence
+
+All commands used Node v24.18.0 through `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+
+1. Nullable latest-session regression:
+   - Command: `pnpm test src/server/queries/history.test.ts`
+   - RED: 1 file failed; 1 of 11 tests failed.
+   - Expected failure: the selector returned the older weighted session (`workoutSessionId ...0008`, weight `"40"`, reps `10`) instead of the newer completed unweighted session (`...0009`, weight `null`, reps `12`).
+2. Gapped set-number regression:
+   - Command: `pnpm test src/server/workouts/mutations.test.ts`
+   - RED: 1 file failed; 1 of 4 tests failed.
+   - Expected failure: `buildInitialDraftSets is not a function`, proving the mutation had no set-number-aware initialization boundary.
+3. Nullable consumer type boundary:
+   - Command: `pnpm typecheck`
+   - RED after making the backend contract honest: `TS2322` in `TrainView.tsx`; `PreviousPerformanceSet` with `number | null` was not assignable to `SetEntry`'s previous prop typed as `number`.
+
+### GREEN evidence
+
+- `pnpm test src/server/queries/history.test.ts` — 1 file, 11 tests passed.
+- `pnpm test src/server/workouts/mutations.test.ts` — 1 file, 4 tests passed.
+- `pnpm test src/server/queries/history.test.ts src/server/queries/workouts.test.ts src/server/workouts/mutations.test.ts src/actions/history.test.ts src/actions/workouts.test.ts` — 5 files, 32 tests passed.
+- `pnpm typecheck` — passed after the minimal nullable prop-type adjustment.
+
+### Final verification
+
+- `pnpm test` — PASS: 27 files passed, 3 opt-in PostgreSQL files skipped; 199 tests passed, 8 skipped, 0 failed.
+- `pnpm typecheck` — PASS (`tsc --noEmit`, exit 0).
+- `pnpm lint` — PASS (`eslint`, exit 0, no warnings).
+- `git diff --check` — PASS (exit 0).
+
+No hosted database, opt-in PostgreSQL test, migration, schema command, build, browser, or deployment operation was run.
+
+### Self-review
+
+- The latest session exercise is selected before nullable weight is interpreted, so an unweighted latest session cannot fall through to older weighted history.
+- Raw rows retain `setNumber`, exact numeric text, nullable weight, and reps. Draft initialization uses a `setNumber` lookup rather than array position.
+- Active-workout DTOs now honestly carry nullable previous weight; the shared eligibility/cutoff/ownership logic remains single-sourced.
+- The SQL predicate still filters completed sessions and completed sets but does not filter null weight, matching the schema and corrected contract.
+- No schema, query-plan, ownership, cursor, action, UI behavior, or hosted-data boundary changed.
+
+### Concerns
+
+None blocking. The `SetEntry` file change is deliberately type-only and was required by the nullable backend contract; user-facing formatting for bodyweight/unweighted previous sets remains part of the later UI integration scope.

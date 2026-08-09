@@ -13,7 +13,11 @@ import {
 } from '../../db/schema';
 import type { ActiveWorkout } from '../../types';
 import { AuthorizationError, requireOwnedRecord, ownedWhere } from '../auth/ownership';
-import { createDrizzleHistoryReadAdapter, getPreviousPerformanceRowsByExercise } from '../queries/history';
+import {
+  createDrizzleHistoryReadAdapter,
+  getPreviousPerformanceRowsByExercise,
+  type SelectedPreviousPerformanceRow,
+} from '../queries/history';
 import { getActiveWorkout } from '../queries/workouts';
 import type {
   CompleteWorkoutInput,
@@ -48,6 +52,23 @@ export function requireExactWorkoutIds(currentIds: readonly string[], submittedI
   ) {
     throw new WorkoutMutationError('CONFLICT', 'Workout structure changed. Reload and try again.');
   }
+}
+
+export function buildInitialDraftSets(
+  targetSets: number,
+  targetRepMin: number,
+  previousSets: readonly Pick<SelectedPreviousPerformanceRow, 'setNumber' | 'weight' | 'reps'>[] = [],
+) {
+  const previousBySetNumber = new Map(previousSets.map((set) => [set.setNumber, set]));
+  return Array.from({ length: targetSets }, (_, index) => {
+    const setNumber = index + 1;
+    const previous = previousBySetNumber.get(setNumber);
+    return {
+      setNumber,
+      weight: previous?.weight ?? null,
+      reps: previous?.reps ?? targetRepMin,
+    };
+  });
 }
 
 async function lockUser(tx: Transaction, userId: string) {
@@ -138,16 +159,13 @@ export async function startWorkoutForUser(
         notes: source.notes,
       }).returning({ id: sessionExercises.id });
       const previousSets = previous.get(source.exerciseId);
-      await tx.insert(workoutSets).values(Array.from({ length: source.targetSets }, (_, index) => {
-        const prior = previousSets?.[index];
-        return {
+      await tx.insert(workoutSets).values(
+        buildInitialDraftSets(source.targetSets, source.targetRepMin, previousSets).map((set) => ({
+          ...set,
           sessionExerciseId: createdExercise.id,
-          setNumber: index + 1,
-          weight: prior?.weight ?? null,
-          reps: prior?.reps ?? source.targetRepMin,
           isCompleted: false,
-        };
-      }));
+        })),
+      );
     }
   });
 
