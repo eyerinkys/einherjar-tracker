@@ -16,9 +16,7 @@ export const createCustomExerciseSchema = z.object({
     .trim()
     .min(1, 'Equipment type is required.')
     .max(100, 'Equipment type cannot exceed 100 characters.'),
-  category: z.enum(['compound', 'isolation'], {
-    required_error: 'Exercise category is required.',
-  }),
+  category: z.enum(['compound', 'isolation']),
 });
 
 export type CreateCustomExerciseInput = z.infer<typeof createCustomExerciseSchema>;
