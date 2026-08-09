@@ -53,9 +53,19 @@ const aiEnvSchema = z.object({
   GROQ_MODEL: z.string().trim().min(1).optional(),
 });
 
+const b2EnvSchema = z.object({
+  B2_KEY_ID: z.string().trim().min(1).optional(),
+  B2_APPLICATION_KEY: z.string().trim().min(1).optional(),
+  B2_BUCKET_NAME: z.string().trim().min(1).optional(),
+  B2_ENDPOINT: z.string().trim().min(1).optional(),
+});
+
+
 export type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 export type AiEnv = z.infer<typeof aiEnvSchema>;
+export type B2Env = z.infer<typeof b2EnvSchema>;
+
 
 function parseEnvironment<T>(
   schema: z.ZodType<T>,
@@ -93,4 +103,12 @@ export function parseAiEnv(values: Record<string, string | undefined>): AiEnv {
 
 export function getAiEnv(): AiEnv {
   return parseAiEnv(process.env);
+}
+
+export function parseB2Env(values: Record<string, string | undefined>): B2Env {
+  return parseEnvironment(b2EnvSchema, values);
+}
+
+export function getB2Env(): B2Env {
+  return parseB2Env(process.env);
 }

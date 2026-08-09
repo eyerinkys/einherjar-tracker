@@ -23,6 +23,7 @@ export const trainingProfiles = pgTable('training_profiles', {
   preferredProgressionMethod: text('preferred_progression_method'),
   availableWeightIncrementsKg: jsonb('available_weight_increments_kg').notNull().default('[]'),
   generalTrainingNotes: text('general_training_notes'),
+  ianaTimezone: text('iana_timezone'),
   createdAt,
   updatedAt,
 });

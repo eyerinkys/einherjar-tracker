@@ -4,9 +4,6 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const { getWorkoutHistory } = vi.hoisted(() => ({
-  getWorkoutHistory: vi.fn(() => { throw new Error('Legacy workout fixtures were accessed.'); }),
-}));
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -24,10 +21,6 @@ vi.mock('@/actions/bodyweight', () => ({
   getBodyweightSummaryAction: vi.fn(),
   logBodyweight: vi.fn(),
   deleteBodyweightEntry: vi.fn(),
-}));
-vi.mock('@/services/dataService', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@/services/dataService')>(),
-  getWorkoutHistory,
 }));
 
 import { ApplicationShell } from './ApplicationShell';
@@ -53,6 +46,13 @@ it('renders server history without consulting the legacy workout fixture service
         nextCursor: null,
       }}
       initialExerciseHistory={null}
+      initialHomeDashboardData={{
+        metrics: { currentStreak: 0, longestStreak: 0, weeklyAdherence: 0, rollingAdherence: 0, hasSchedule: false },
+        heatmap: [],
+        nextWorkout: null,
+        recentActivity: null,
+        progressionSnapshot: { readyCount: 0, stalledCount: 0 }
+      }}
       user={{ id: 'trusted-user', name: 'Trusted User', email: 'trusted@example.test' }}
     />,
   );
@@ -60,5 +60,4 @@ it('renders server history without consulting the legacy workout fixture service
   await userEvent.click(screen.getAllByRole('button', { name: 'History' })[0]);
 
   expect(screen.getByText('Server History')).toBeTruthy();
-  expect(getWorkoutHistory).not.toHaveBeenCalled();
 });

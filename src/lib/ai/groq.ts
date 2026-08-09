@@ -43,6 +43,7 @@ export async function fetchGroqRecommendation(
         }
       },
       temperature: 0.2, // Low temperature for consistent outputs
+      max_completion_tokens: 800, // Limit output size
     }),
   });
 

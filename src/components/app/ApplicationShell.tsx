@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ActiveWorkout, BodyweightSummaryDTO, CompletedWorkoutHistoryPage, Exercise, ExerciseHistory, SplitDay } from '@/types';
+import type { ActiveWorkout, BodyweightSummaryDTO, CompletedWorkoutHistoryPage, Exercise, ExerciseHistory, SplitDay, ProgressPhoto } from '@/types';
 import { Header } from '@/components/layout/Header';
 import { Navigation, NavTab } from '@/components/layout/Navigation';
 import { SplitView } from '@/components/screens/SplitView';
@@ -11,6 +11,8 @@ import { ExerciseDetailView } from '@/components/screens/ExerciseDetailView';
 import { AnalyticsView } from '@/components/screens/AnalyticsView';
 import { BodyweightView } from '@/components/screens/BodyweightView';
 import { PhotosView } from '@/components/screens/PhotosView';
+import { HomeDashboard } from '@/components/screens/HomeDashboard';
+import type { HomeDashboardDTO } from '@/types/home';
 
 interface ApplicationShellProps {
   exercises: Exercise[];
@@ -19,6 +21,8 @@ interface ApplicationShellProps {
   initialHistoryPage: CompletedWorkoutHistoryPage;
   initialExerciseHistory: ExerciseHistory | null;
   initialBodyweightSummary?: BodyweightSummaryDTO;
+  initialPhotos?: ProgressPhoto[];
+  initialHomeDashboardData: HomeDashboardDTO;
   user: {
     id: string;
     name: string;
@@ -26,8 +30,8 @@ interface ApplicationShellProps {
   };
 }
 
-export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, initialHistoryPage, initialExerciseHistory, initialBodyweightSummary, user }: ApplicationShellProps) {
-  const [activeTab, setActiveTab] = useState<NavTab>('train');
+export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, initialHistoryPage, initialExerciseHistory, initialBodyweightSummary, initialPhotos, initialHomeDashboardData, user }: ApplicationShellProps) {
+  const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [splitPending, setSplitPending] = useState(false);
   const [workoutPending, setWorkoutPending] = useState(false);
   const [workoutState, setWorkoutState] = useState(() => ({ source: initialActiveWorkout, value: initialActiveWorkout }));
@@ -51,6 +55,10 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
         <Navigation activeTab={activeTab} disabled={splitPending || workoutPending} onSelectTab={setActiveTab} />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl overflow-y-auto">
+          {activeTab === 'home' ? (
+            <HomeDashboard data={initialHomeDashboardData} />
+          ) : null}
+
           {activeTab === 'split' ? (
             <SplitView
               availableExercises={exercises}
@@ -100,7 +108,7 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
           ) : null}
 
           {activeTab === 'bodyweight' ? <BodyweightView initialSummary={initialBodyweightSummary} /> : null}
-          {activeTab === 'photos' ? <PhotosView /> : null}
+          {activeTab === 'photos' ? <PhotosView initialPhotos={initialPhotos} /> : null}
         </main>
       </div>
     </div>

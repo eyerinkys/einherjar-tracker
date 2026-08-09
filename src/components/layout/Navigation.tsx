@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Layers, Play, Clock, TrendingUp, Scale, Camera } from 'lucide-react';
+import { Layers, Play, Clock, TrendingUp, Scale, Camera, Activity } from 'lucide-react';
 
-export type NavTab = 'split' | 'train' | 'history' | 'progress' | 'bodyweight' | 'photos';
+export type NavTab = 'home' | 'split' | 'train' | 'history' | 'progress' | 'bodyweight' | 'photos';
 
 interface NavigationProps {
   activeTab: NavTab;
@@ -13,6 +13,7 @@ interface NavigationProps {
 
 export const Navigation: React.FC<NavigationProps> = ({ activeTab, disabled = false, onSelectTab }) => {
   const items: { id: NavTab; label: string; icon: React.FC<{ className?: string }> }[] = [
+    { id: 'home', label: 'Home', icon: Activity },
     { id: 'split', label: 'Split', icon: Layers },
     { id: 'train', label: 'Train', icon: Play },
     { id: 'history', label: 'History', icon: Clock },
@@ -81,18 +82,6 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, disabled = fa
               </button>
             );
           })}
-        </div>
-
-        <div className="mt-auto pt-6 border-t border-[#393E46]/60">
-          <div className="bg-[#1C2128] p-3 rounded-xs border border-[#393E46] text-xs font-mono text-[#948979]">
-            <div className="text-[#DFD0B8] font-bold mb-1 flex items-center justify-between">
-              <span>EINHERJAR LOG</span>
-              <span className="text-[10px] text-[#677D6A]">v1.0-MOCK</span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-[#948979]">
-              Norse-industrial workout ledger. Mobile-first design mode.
-            </p>
-          </div>
         </div>
       </aside>
     </>

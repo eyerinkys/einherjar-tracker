@@ -1,54 +1,56 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ProgressPhoto } from '@/types';
-import { getProgressPhotos } from '@/services/dataService';
+import type { ProgressPhoto } from '@/types';
+import { getPhotos, deletePhoto } from '@/actions/photos';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Camera, Columns, Check, X } from 'lucide-react';
+import { Camera, Columns, Check, X, Trash2 } from 'lucide-react';
 
-// Neutral SVG Silhouette Component for Mock Photos
-const SilhouettePhoto: React.FC<{ type: 'front' | 'side' | 'back'; label: string; date: string }> = ({ type, label, date }) => {
+// Real Photo Component for displaying uploaded images
+const PhotoDisplay: React.FC<{ url: string; label: string | null; date: string }> = ({ url, label, date }) => {
   return (
-    <div className="w-full h-full min-h-[220px] bg-[#161A20] border border-[#393E46] relative flex flex-col items-center justify-center p-4 group overflow-hidden">
-      {/* Background Subtle Runic Grid Pattern */}
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#DFD0B8_1px,transparent_1px)] [background-size:16px_16px]" />
-      
-      {/* Central Neutral Silhouette Icon */}
-      <svg width="80" height="120" viewBox="0 0 80 120" fill="none" className="text-[#393E46] group-hover:text-[#677D6A] transition-colors duration-300">
-        {/* Head */}
-        <circle cx="40" cy="20" r="12" stroke="currentColor" strokeWidth="2" fill="#222831" />
-        {/* Shoulders & Torso */}
-        {type === 'front' && (
-          <path d="M 20 42 Q 40 38 60 42 L 56 80 L 24 80 Z" stroke="currentColor" strokeWidth="2" fill="#222831" />
-        )}
-        {type === 'side' && (
-          <path d="M 28 42 Q 45 40 50 45 L 46 80 L 30 80 Z" stroke="currentColor" strokeWidth="2" fill="#222831" />
-        )}
-        {type === 'back' && (
-          <path d="M 18 40 Q 40 36 62 40 L 54 82 L 26 82 Z" stroke="currentColor" strokeWidth="2" fill="#222831" />
-        )}
-        {/* Arms */}
-        <path d="M 18 42 L 12 70" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M 62 42 L 68 70" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Legs */}
-        <path d="M 30 80 L 28 115" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M 50 80 L 52 115" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-
+    <div className="w-full h-full min-h-[220px] bg-[#161A20] border border-[#393E46] relative flex flex-col items-center justify-center p-0 group overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={label || 'Progress Photo'} className="object-cover w-full h-full absolute inset-0" />
       <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] font-mono text-[#948979] bg-[#222831]/80 backdrop-blur-xs px-2 py-1 rounded-xs border border-[#393E46]">
         <span>{date}</span>
-        <span className="uppercase text-[#8DAA91] font-bold">{label}</span>
+        {label && <span className="uppercase text-[#8DAA91] font-bold">{label}</span>}
       </div>
     </div>
   );
 };
 
-export const PhotosView: React.FC = () => {
-  const [photos] = useState<ProgressPhoto[]>(() => getProgressPhotos());
+interface PhotosViewProps {
+  initialPhotos?: ProgressPhoto[];
+}
+
+export const PhotosView: React.FC<PhotosViewProps> = ({ initialPhotos }) => {
+  const [photos, setPhotos] = useState<ProgressPhoto[]>(() => initialPhotos ?? []);
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [isComparing, setIsComparing] = useState<boolean>(false);
+  const [pending, setPending] = useState(false);
+
+  const refreshPhotos = async () => {
+    const res = await getPhotos();
+    if (res.ok) setPhotos(res.data);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this photo?')) return;
+    setPending(true);
+    const res = await deletePhoto({ photoId: id });
+    setPending(false);
+    if (res.ok) {
+      if (compareIds.includes(id)) {
+        setCompareIds(compareIds.filter((cid) => cid !== id));
+      }
+      await refreshPhotos();
+    } else {
+      alert(res.message || 'Failed to delete photo.');
+    }
+  };
 
   const filteredPhotos = photos.filter(
     (p) => selectedTag === 'all' || p.tag === selectedTag
@@ -147,7 +149,7 @@ export const PhotosView: React.FC = () => {
                     <span className="font-bold text-[#DFD0B8]">BASELINE / EARLIER</span>
                     <span>{photoA.date} ({photoA.tag})</span>
                   </div>
-                  <SilhouettePhoto type={photoA.svgPlaceholderType} label={photoA.tag} date={photoA.date} />
+                  <PhotoDisplay url={photoA.url} label={photoA.tag} date={photoA.date} />
                   {photoA.notes && <p className="text-xs font-mono text-[#948979] italic">&quot;{photoA.notes}&quot;</p>}
                 </div>
 
@@ -157,7 +159,7 @@ export const PhotosView: React.FC = () => {
                     <span className="font-bold text-[#8DAA91]">LATER / CURRENT</span>
                     <span>{photoB.date} ({photoB.tag})</span>
                   </div>
-                  <SilhouettePhoto type={photoB.svgPlaceholderType} label={photoB.tag} date={photoB.date} />
+                  <PhotoDisplay url={photoB.url} label={photoB.tag} date={photoB.date} />
                   {photoB.notes && <p className="text-xs font-mono text-[#948979] italic">&quot;{photoB.notes}&quot;</p>}
                 </div>
               </div>
@@ -171,7 +173,7 @@ export const PhotosView: React.FC = () => {
               return (
                 <RunePanel key={photo.id} variant="carved" className="p-3 space-y-2 group">
                   <div className="relative">
-                    <SilhouettePhoto type={photo.svgPlaceholderType} label={photo.tag} date={photo.date} />
+                    <PhotoDisplay url={photo.url} label={photo.tag} date={photo.date} />
 
                     {/* Compare Checkbox Selection Overlay */}
                     <button
@@ -184,6 +186,16 @@ export const PhotosView: React.FC = () => {
                       title={isSelected ? 'Deselect for comparison' : 'Select for side-by-side comparison'}
                     >
                       <Check className={`w-4 h-4 stroke-[3] ${isSelected ? 'scale-100' : 'scale-75 opacity-40'}`} />
+                    </button>
+                    
+                    {/* Delete button */}
+                    <button
+                      onClick={() => handleDelete(photo.id)}
+                      disabled={pending}
+                      className="absolute top-2 left-2 w-7 h-7 rounded-xs border flex items-center justify-center transition-all bg-[#222831]/80 border-[#393E46] text-[#948979] hover:text-[#FF9999] hover:border-[#FF9999] disabled:opacity-50"
+                      title="Delete photo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
 

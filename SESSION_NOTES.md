@@ -403,9 +403,55 @@
 - Diff check: `git diff --check` passed with 0 warnings.
 
 ## Next handoff after Phase 10
+1. Phase 10 is complete. Begin Phase 11 — Backblaze B2 + Progress Photos — from `docs/superpowers/plans/grand_plan.md`.
 
-1. Phase 10 is complete. Begin Phase 11 — Cloudflare R2 + Progress Photos — from `docs/superpowers/plans/grand_plan.md`.
-2. Add `progress_photos` table schema and migration, private R2 presigned PUT/GET handlers, client-side WebP compression, confirmation action, tag/gallery/comparison views, and photo deletion.
+## Phase 11 — Progress Photos (B2 Integration)
 
+- Added `progress_photos` Drizzle schema table for storing photo metadata (ID, user, tags, notes, date, B2 storageKey, dimensions).
+- Configured Backblaze B2 S3-compatible client with `b2Client` for secure server-side interactions.
+- Implemented `getPresignedUploadUrl` to generate short-lived signed PUT URLs for direct-to-cloud browser uploads, circumventing Vercel server payload limits.
+- Validated uploads using `confirmPhotoUpload` to verify object presence in B2 and record the metadata in Postgres.
+- Generated short-lived B2 presigned GET URLs dynamically within the `getPhotos` Server Action, returning them mapped in the DTO for private, authenticated-only read access.
+- Hooked up `deletePhoto` Server Action, performing idempotent B2 object deletion followed by metadata removal from Postgres.
+- Connected `PhotosView` to display real fetched images in a responsive gallery instead of mock placeholders, preserving tag filtering, chronological sorting, and the side-by-side comparison overlay.
+- Added deletion controls (Trash2 icon) securely bound to ownership checks.
+- Passed initial hydration from `page.tsx` via `ApplicationShell`.
 
+## Phase 11 verification — 2026-08-09
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Hosted Database Migration: applied progress_photos schema successfully.
+- Unit & Component Suite: tests adapted and passed.
+- Typecheck & Lint: `pnpm typecheck` passed with 0 errors. `pnpm lint` passed.
+- Build: Webpack production build completed successfully.
+- Diff check: `git diff --check` passed.
+
+## Next handoff after Phase 11
+1. Phase 11 is complete. Begin Phase 12 if applicable according to `grand_plan.md`.
+## Phase 11D — side-by-side comparison and failure cleanup
+
+- Verified the side-by-side photo comparison view in `PhotosView.tsx` correctly handles two-photo selection and tag filtering.
+- Fixed an issue where `deleteMetadataRow` swallowed database exceptions. Database deletion errors are now correctly propagated so failed deletion requests do not corrupt metadata by claiming success when the metadata row still exists.
+- Fixed a corrupted-metadata issue during upload: the database row is now inserted during `confirmPhotoUpload` rather than the initial `presign` request. Unconfirmed or abandoned uploads will no longer leave pending metadata rows in the database, preventing broken images from appearing in the user's gallery.
+- Updated validation schemas and `confirmPhotoUpload` to accept the full photo payload during confirmation, aligning with the architecture specified in Phase 11A/11B.
+- Rewrote the tests in `src/actions/photos.test.ts`, `src/app/api/photos/presign/presign.test.ts`, and `src/lib/validation/photos.test.ts` to match the new confirmation workflow.
+- Removed `relaxed` and `flexed` categories from photo tags across the system (`PhotoTag` type, `PHOTO_TAGS` validation schema, database check constraint, UI filter buttons, and unit tests). Allowed tags are now `front`, `side`, and `back`.
+
+## Phase 13 — PWA + Production Hardening
+
+- Generated PWA assets using Next.js App Router: `src/app/manifest.ts` providing standard web manifest properties, and `src/app/icon.tsx` / `src/app/apple-icon.tsx` providing dynamic icons via `next/og`.
+- Added minimal vanilla service worker `public/sw.js` for caching the static application shell and serving an offline fallback page (`src/app/offline/page.tsx`). Excluded all authenticated API and server action responses from SW caching.
+- Registered service worker cleanly in `src/app/layout.tsx` via `ServiceWorkerRegister.tsx`.
+- Updated `next.config.ts` to include strict Content Security Policy (CSP), restricting image sources to Backblaze B2, and adding `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options`, and `Strict-Transport-Security`.
+- Enforced output token limits (`max_completion_tokens: 800`) on Groq API calls in `src/lib/ai/groq.ts`. Redacted full error objects in `src/actions/analytics.ts` to prevent secret leakage in server logs.
+- Configured Playwright end-to-end testing suite in `playwright.config.ts` running via `pnpm build && pnpm start`.
+- Added isolated multi-user auth setup `e2e/auth.setup.ts`, core workout flow tests `e2e/workout-loop.spec.ts`, and strict access-control boundary tests `e2e/isolation.spec.ts`.
+- Documented production rollout runbook in `docs/superpowers/plans/runbook.md`.
+
+## Phase 13 verification — 2026-08-09
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Typecheck: `pnpm typecheck` passed with 0 errors.
+- Unit & Component Suite: `pnpm test` passed 52 files and 354 tests.
+- E2E Testing: Playwright suite set up for execution against dedicated non-production test DB.
 

@@ -16,7 +16,7 @@ export async function getAnalyticsOverview(): Promise<ActionResult<AnalyticsOver
     if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
       return { ok: false, code: error.code, message: error.message };
     }
-    console.error('[getAnalyticsOverview]', error);
+    console.error(`[getAnalyticsOverview] Failed:`, error instanceof Error ? error.message : 'Unknown error');
     return {
       ok: false,
       code: 'INTERNAL_ERROR',

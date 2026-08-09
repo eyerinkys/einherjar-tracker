@@ -4,18 +4,18 @@
 
 **Target file:** `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`
 
-**Goal:** Replace the approved mock-backed frontend with a secure, user-isolated Neon/Drizzle backend, deterministic training analysis, optional Groq guidance, private R2 photos, and a production-ready PWA without redesigning the UI.
+**Goal:** Replace the approved mock-backed frontend with a secure, user-isolated Neon/Drizzle backend, deterministic training analysis, optional Groq guidance, private Backblaze B2 photos, and a production-ready PWA without redesigning the UI.
 
 **Architecture:** Keep one Next.js repository. Preserve the existing screen/view-model types where sensible, but replace synchronous mock getters incrementally with server-only queries, Zod-validated Server Actions, and narrowly justified Route Handlers. Completed workout history remains the sole source of truth for PRs, progression, graphs, analytics, and AI context.
 
-**Tech stack:** Next.js 16, React 19, TypeScript, Neon PostgreSQL, Drizzle ORM/Kit, Better Auth, Zod, Groq, Cloudflare R2, Recharts, Vercel, pnpm.
+**Tech stack:** Next.js 16, React 19, TypeScript, Neon PostgreSQL, Drizzle ORM/Kit, Better Auth, Zod, Groq, Backblaze B2, Recharts, Vercel, pnpm.
 
 ## Global Constraints
 
 - Preserve the approved frontend structure, visual identity, navigation, and mobile-first interaction model.
 - Never accept ownership from a client-supplied `userId`; derive it from the validated server session.
 - Validate every action and route-handler input with Zod.
-- Use Server Actions for normal application reads/mutations and Route Handlers only for Better Auth, Groq if needed, and presigned R2 operations.
+- Use Server Actions for normal application reads/mutations and Route Handlers only for Better Auth, Groq if needed, and presigned Backblaze B2 operations.
 - Use Node runtime for authenticated database operations; Drizzle’s Neon WebSocket driver is preferred because workout and reorder mutations need interactive transactions. Neon HTTP remains suitable only for isolated queries. [Drizzle Neon guide](https://orm.drizzle.team/docs/get-started/neon-new)
 - Generate and commit SQL migrations and metadata; use `drizzle-kit migrate`, not `push`, against shared or production databases. [Drizzle migration documentation](https://orm.drizzle.team/docs/kit-overview)
 - Derive PRs and progression from completed workout history. Do not persist fabricated PR facts or let Groq determine objective status.
@@ -823,7 +823,7 @@
 
 ---
 
-## Phase 11 — Cloudflare R2 + Progress Photos
+## Phase 11 — Backblaze B2 + Progress Photos
 
 ### Subphases
 
@@ -835,7 +835,7 @@
 1. **Goal:** Replace photo placeholders with securely uploaded private images while retaining the approved gallery/comparison interface.
 
 2. **Deliverables:**
-   - Private R2 bucket integration.
+   - Private Backblaze B2 bucket integration.
    - Short-lived presigned PUT and GET URLs.
    - Browser-side resize/compression.
    - Metadata confirmation after upload.
@@ -844,10 +844,10 @@
 
 3. **Likely files/areas affected:**
    - photo schema/migration
-   - `src/lib/r2.ts`, photo actions/route handlers
+   - `src/lib/b2.ts`, photo actions/route handlers
    - upload compression helper and validation
    - `PhotosView.tsx`, photo types
-   - R2 contract tests
+   - Backblaze B2 contract tests
 
 4. **Database/schema changes:**
    - `progress_photos`: ID, user, storage key, date, nullable tag, notes, MIME type, byte size, width, height, timestamps.
@@ -855,35 +855,35 @@
    - Unique storage key and `(user_id, date)` index.
    - PostgreSQL stores metadata only.
 
-5. **Dependencies:** Phase 2; R2 bucket, scoped API credentials, and CORS configuration.
+5. **Dependencies:** Phase 2; Backblaze B2 bucket, scoped API credentials (`B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET_NAME`, `B2_ENDPOINT`), and CORS configuration.
 
 6. **Implementation substeps:**
    - Create a private bucket and server-only S3-compatible client.
-   - Configure CORS for exact development/preview/production origins and only required methods/headers. Browser presigned operations fail without bucket CORS. [Cloudflare R2 CORS](https://developers.cloudflare.com/r2/buckets/cors/)
+   - Configure CORS for exact development/preview/production origins and only required methods/headers. Browser presigned operations fail without bucket CORS. [Backblaze B2 S3 CORS](https://www.backblaze.com/docs/cloud-storage-cors-with-the-s3-compatible-api)
    - Implement authenticated `POST /api/photos/presign` that validates metadata and creates an unguessable `users/{authenticatedUserId}/{uuid}` key.
    - Bind the short-lived PUT signature to the key and exact content type.
    - Resize locally to a maximum 1,600-pixel long edge, encode WebP at approximately 0.82 quality, and require output no larger than 3 MB.
-   - PUT directly to R2; never send image bytes through Next.js.
+   - PUT directly to Backblaze B2; never send image bytes through Next.js.
    - Confirm upload through an authenticated action that performs `HEAD`, verifies key prefix/type/size, then inserts metadata.
    - Delete invalid/oversized uploads before returning failure.
    - List only owned metadata and issue short-lived GET URLs after ownership checks.
    - Implement idempotent delete: verify metadata ownership, delete object, then delete metadata; retries must tolerate an already-missing object.
    - Replace silhouettes with real images while preserving gallery, filters, and comparison layout.
-   - Treat presigned URLs as bearer credentials and keep expirations short. [Cloudflare R2 presigned URL guidance](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+   - Treat presigned URLs as bearer credentials and keep expirations short. [Backblaze B2 Presigned URLs](https://www.backblaze.com/docs/cloud-storage-presigned-urls)
 
 7. **Acceptance criteria:**
-   - Users upload directly to private R2 and see confirmed photos in their gallery.
+   - Users upload directly to private Backblaze B2 and see confirmed photos in their gallery.
    - Unconfirmed or invalid uploads never create visible metadata.
    - User A cannot presign, view, confirm, or delete User B’s object.
    - Expired URLs stop working.
    - Tag filtering and two-photo comparison work with real images.
    - Failed upload/delete states are recoverable and do not corrupt metadata.
-   - R2 credentials never reach the browser.
+   - Backblaze B2 credentials never reach the browser.
 
 8. **Tests/verifications:**
    - Validation tests for type, size, dimensions, tag, date, and notes.
    - Presign tests proving authenticated key prefix and expiry.
-   - Mocked R2 PUT/HEAD/GET/delete success and failure tests.
+   - Mocked Backblaze B2 PUT/HEAD/GET/delete success and failure tests.
    - Cross-user object enumeration tests.
    - Upload-confirm replay/idempotency tests.
    - Browser CORS test against a non-production bucket.
@@ -892,11 +892,11 @@
 
 9. **Security/data ownership concerns:**
    - Private bucket only; no public development shortcut.
-   - Use separate scoped R2 credentials with access limited to the photo bucket.
+   - Use separate scoped Backblaze B2 credentials (application key ID / application key) with access limited to the photo bucket.
    - Never accept arbitrary object keys during confirm/delete.
    - Validate after upload because a PUT presign alone cannot be trusted as metadata proof.
    - Escape notes and avoid using original filenames as keys.
-   - Configure `img-src` only for the necessary R2 S3 endpoint.
+   - Configure `img-src` only for the necessary Backblaze B2 S3 endpoint.
 
 10. **Risks or negotiable decisions:**
     - HEIC behavior must be verified on target iPhones before locking accepted source formats; JPEG/PNG/WebP are mandatory.
@@ -905,11 +905,11 @@
     - No CDN/public custom domain, albums, sharing, or image transformations service.
 
 11. **Recommended commit boundaries:**
-    - `feat: add private R2 photo metadata and client`
+    - `feat: add private Backblaze B2 photo metadata and client`
     - `feat: add presigned upload and confirmation flow`
     - `feat: connect private gallery and deletion`
     - `feat: connect real photo comparison`
-    - `test: cover R2 ownership and upload failures`
+    - `test: cover Backblaze B2 ownership and upload failures`
 
 ---
 
@@ -951,7 +951,7 @@
    - `rg` audit for mock/demo/placeholder identifiers.
    - Fresh-account end-to-end test.
    - Populated-account end-to-end test.
-   - Groq-disabled and R2-disabled failure-state tests.
+   - Groq-disabled and B2-disabled failure-state tests.
    - Full tests, lint, typecheck, build, and `git diff --check`.
 
 9. **Security/data ownership concerns:**
@@ -976,7 +976,7 @@
 
 - **13A — PWA manifest and installability**
 - **13B — validation, security, mobile, and failure-state audit**
-- **13C — Vercel/Neon/R2 production rollout**
+- **13C — Vercel/Neon/Backblaze B2 production rollout**
 
 1. **Goal:** Make the completed application installable, secure, observable through existing platform logs, and safe to deploy.
 
@@ -1012,7 +1012,7 @@
    - Test narrow iPhone viewport, Android viewport, desktop, touch targets, numeric inputs, reduced motion, keyboard access, loading, error, and retry states.
    - Configure Vercel environment separation and production trusted origins.
    - Apply reviewed migrations to production via an explicit release step using the direct URL before deploying application code that depends on them.
-   - Verify Neon production branch, Better Auth URL/cookies, Groq model, R2 CORS, bucket privacy, and Vercel runtime logs.
+   - Verify Neon production branch, Better Auth URL/cookies, Groq model, Backblaze B2 CORS, bucket privacy, and Vercel runtime logs.
    - Document rollback: application rollback first; schema rollback only through reviewed forward-fix migrations unless a safe explicit down migration exists.
 
 7. **Acceptance criteria:**
@@ -1022,7 +1022,7 @@
    - Production build contains no secrets.
    - Migration from blank and previous schema succeeds.
    - Core workout loop works on real mobile hardware.
-   - Groq/R2/Neon failures show recoverable states without data fabrication or partial completion.
+   - Groq/B2/Neon failures show recoverable states without data fabrication or partial completion.
    - Vercel production health is verified separately from local checks.
 
 8. **Tests/verifications:**
@@ -1033,7 +1033,7 @@
    - PWA manifest/service-worker inspection and installability audit.
    - Security-header and CSP inspection.
    - Cross-user ID fuzzing for every entity.
-   - R2 CORS/expiry/size tests.
+   - Backblaze B2 CORS/expiry/size tests.
    - Groq-disabled production-like smoke test.
    - `git diff --check`, clean status review, and deployment runbook rehearsal.
 
@@ -1041,14 +1041,14 @@
    - Do not cache personalized HTML/data in shared caches.
    - Exclude auth routes from service-worker caching.
    - Use environment-specific trusted origins and secure cookies.
-   - Keep migration, R2, and Groq credentials server-only and least-privileged.
+   - Keep migration, Backblaze B2, and Groq credentials server-only and least-privileged.
    - Never treat `proxy.ts` as the authorization boundary.
    - Confirm every delete/update includes ownership resolution.
 
 10. **Risks or negotiable decisions:**
     - Service-worker behavior should remain minimal because offline workout synchronization is explicitly out of scope.
     - Preview deployments need a deliberate Neon branch and Better Auth trusted-origin policy; otherwise keep previews disconnected from production data.
-    - No external monitoring service is added; use Vercel, Neon, R2, and Groq native logs/metrics.
+    - No external monitoring service is added; use Vercel, Neon, Backblaze B2, and Groq native logs/metrics.
     - Production migration and deployment remain explicit operator actions.
 
 11. **Recommended commit boundaries:**
@@ -1092,16 +1092,20 @@
    - 8C failure/UI integration
 9. Analytics
 10. Bodyweight
-11. R2 + Progress Photos  
+11. Backblaze B2 + Progress Photos  
     - 11A storage/schema  
     - 11B upload/confirm  
     - 11C gallery/delete  
     - 11D comparison/failures
-12. Remove Remaining Mock Data
-13. PWA + Production Hardening  
-    - 13A PWA  
-    - 13B audit/E2E  
-    - 13C production rollout
+12. Home & Consistency Tracker
+    - 12A historical schedule schema & engine
+    - 12B dashboard aggregation
+    - 12C heatmap & UI integration
+13. Remove Remaining Mock Data
+14. PWA + Production Hardening  
+    - 14A PWA  
+    - 14B audit/E2E  
+    - 14C production rollout
 
 The main adaptation is that Phase 1 creates only the auth/core workout schema. Training-profile, bodyweight, AI-cache, and photo tables are added by their owning phases. This preserves dependency order while avoiding one giant speculative schema migration.
 
@@ -1124,4 +1128,4 @@ It has a small review surface, creates no production data, and establishes the e
   - Workout persistence is locked to one resumable active session per user.
 - Before Phase 2, supply the two normalized allowed email addresses and generate a strong Better Auth secret.
 - Before Phase 8, choose and pin a currently available Groq model supporting the desired structured-output mode.
-- Before Phase 11, provision the private R2 bucket and scoped credentials; HEIC behavior can be validated during 11B.
+- Before Phase 11, provision the private Backblaze B2 bucket, endpoint, and scoped credentials (`B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET_NAME`, `B2_ENDPOINT`); HEIC behavior can be validated during 11B.

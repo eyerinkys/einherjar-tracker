@@ -7,6 +7,11 @@ import { getSplitDays } from '@/server/queries/splits';
 import { getActiveWorkout } from '@/server/queries/workouts';
 import { getCompletedSessionHistory, getExerciseHistory } from '@/server/queries/history';
 import { getBodyweightSummary } from '@/server/queries/bodyweight';
+import { getPhotos } from '@/actions/photos';
+import { getHomeDashboardData } from '@/server/queries/home';
+import { getDb } from '@/db/client';
+import { trainingProfiles } from '@/db/schema/ai';
+import { eq } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -24,14 +29,24 @@ export default async function Home() {
   const firstExerciseHistoryRequest = exercisesRequest.then((visibleExercises) => (
     visibleExercises[0] ? getExerciseHistory(userId, visibleExercises[0].id) : null
   ));
-  const [exercises, splitDays, activeWorkout, historyPage, exerciseHistory, bodyweightSummary] = await Promise.all([
+  const db = getDb();
+  const profileRequest = db.query.trainingProfiles.findFirst({
+    where: eq(trainingProfiles.userId, userId),
+  });
+
+  const [exercises, splitDays, activeWorkout, historyPage, exerciseHistory, bodyweightSummary, photosRes, profile] = await Promise.all([
     exercisesRequest,
     getSplitDays(userId),
     getActiveWorkout(userId),
     getCompletedSessionHistory(userId, { pageSize: 20 }),
     firstExerciseHistoryRequest,
     getBodyweightSummary(userId),
+    getPhotos(),
+    profileRequest,
   ]);
+
+  const timezone = profile?.ianaTimezone || 'UTC';
+  const homeDashboardData = await getHomeDashboardData(userId, timezone);
 
   return (
     <ApplicationShell
@@ -41,6 +56,8 @@ export default async function Home() {
       initialHistoryPage={historyPage}
       initialExerciseHistory={exerciseHistory}
       initialBodyweightSummary={bodyweightSummary}
+      initialPhotos={photosRes.ok ? photosRes.data : []}
+      initialHomeDashboardData={homeDashboardData}
       user={{
         id: session.user.id,
         name: session.user.name,
