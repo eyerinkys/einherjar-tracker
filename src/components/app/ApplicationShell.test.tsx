@@ -8,6 +8,7 @@ const { getWorkoutHistory } = vi.hoisted(() => ({
   getWorkoutHistory: vi.fn(() => { throw new Error('Legacy workout fixtures were accessed.'); }),
 }));
 
+vi.mock('server-only', () => ({}));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock('@/actions/history', () => ({ getCompletedWorkoutHistory: vi.fn(), getExerciseWorkoutHistory: vi.fn() }));
 vi.mock('@/actions/split', () => ({
@@ -19,6 +20,11 @@ vi.mock('@/actions/workouts', () => ({
   completeWorkout: vi.fn(), discardWorkout: vi.fn(), saveWorkoutDraft: vi.fn(), startWorkout: vi.fn(),
 }));
 vi.mock('@/actions/analytics', () => ({ getAnalyticsOverview: vi.fn() }));
+vi.mock('@/actions/bodyweight', () => ({
+  getBodyweightSummaryAction: vi.fn(),
+  logBodyweight: vi.fn(),
+  deleteBodyweightEntry: vi.fn(),
+}));
 vi.mock('@/services/dataService', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/services/dataService')>(),
   getWorkoutHistory,

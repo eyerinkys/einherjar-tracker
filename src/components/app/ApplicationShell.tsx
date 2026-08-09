@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ActiveWorkout, CompletedWorkoutHistoryPage, Exercise, ExerciseHistory, SplitDay } from '@/types';
+import type { ActiveWorkout, BodyweightSummaryDTO, CompletedWorkoutHistoryPage, Exercise, ExerciseHistory, SplitDay } from '@/types';
 import { Header } from '@/components/layout/Header';
 import { Navigation, NavTab } from '@/components/layout/Navigation';
 import { SplitView } from '@/components/screens/SplitView';
@@ -18,6 +18,7 @@ interface ApplicationShellProps {
   initialActiveWorkout: ActiveWorkout | null;
   initialHistoryPage: CompletedWorkoutHistoryPage;
   initialExerciseHistory: ExerciseHistory | null;
+  initialBodyweightSummary?: BodyweightSummaryDTO;
   user: {
     id: string;
     name: string;
@@ -25,7 +26,7 @@ interface ApplicationShellProps {
   };
 }
 
-export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, initialHistoryPage, initialExerciseHistory, user }: ApplicationShellProps) {
+export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, initialHistoryPage, initialExerciseHistory, initialBodyweightSummary, user }: ApplicationShellProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('train');
   const [splitPending, setSplitPending] = useState(false);
   const [workoutPending, setWorkoutPending] = useState(false);
@@ -98,7 +99,7 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
             </div>
           ) : null}
 
-          {activeTab === 'bodyweight' ? <BodyweightView /> : null}
+          {activeTab === 'bodyweight' ? <BodyweightView initialSummary={initialBodyweightSummary} /> : null}
           {activeTab === 'photos' ? <PhotosView /> : null}
         </main>
       </div>

@@ -3,7 +3,6 @@ import {
   UserTrainingProfile,
   Exercise,
   SplitDay,
-  BodyweightEntry,
   ProgressPhoto,
 } from '@/types';
 import {
@@ -11,7 +10,6 @@ import {
   MOCK_USER_PROFILE,
   MOCK_EXERCISES,
   INITIAL_SPLIT_DAYS,
-  MOCK_BODYWEIGHT_LOGS,
   MOCK_PROGRESS_PHOTOS,
 } from '@/data/mock';
 
@@ -37,10 +35,6 @@ export function getExercises(): Exercise[] {
 
 export function getSplitDays(): SplitDay[] {
   return INITIAL_SPLIT_DAYS;
-}
-
-export function getBodyweightLogs(): BodyweightEntry[] {
-  return MOCK_BODYWEIGHT_LOGS;
 }
 
 export function getProgressPhotos(): ProgressPhoto[] {

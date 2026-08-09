@@ -6,6 +6,7 @@ import { getExercises } from '@/server/queries/exercises';
 import { getSplitDays } from '@/server/queries/splits';
 import { getActiveWorkout } from '@/server/queries/workouts';
 import { getCompletedSessionHistory, getExerciseHistory } from '@/server/queries/history';
+import { getBodyweightSummary } from '@/server/queries/bodyweight';
 
 export const runtime = 'nodejs';
 
@@ -23,12 +24,13 @@ export default async function Home() {
   const firstExerciseHistoryRequest = exercisesRequest.then((visibleExercises) => (
     visibleExercises[0] ? getExerciseHistory(userId, visibleExercises[0].id) : null
   ));
-  const [exercises, splitDays, activeWorkout, historyPage, exerciseHistory] = await Promise.all([
+  const [exercises, splitDays, activeWorkout, historyPage, exerciseHistory, bodyweightSummary] = await Promise.all([
     exercisesRequest,
     getSplitDays(userId),
     getActiveWorkout(userId),
     getCompletedSessionHistory(userId, { pageSize: 20 }),
     firstExerciseHistoryRequest,
+    getBodyweightSummary(userId),
   ]);
 
   return (
@@ -38,6 +40,7 @@ export default async function Home() {
       initialActiveWorkout={activeWorkout}
       initialHistoryPage={historyPage}
       initialExerciseHistory={exerciseHistory}
+      initialBodyweightSummary={bodyweightSummary}
       user={{
         id: session.user.id,
         name: session.user.name,

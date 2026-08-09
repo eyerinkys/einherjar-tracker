@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BodyweightEntry } from '@/types';
-import { getBodyweightLogs } from '@/services/dataService';
+import type { BodyweightSummaryDTO } from '@/types';
+import { logBodyweight, deleteBodyweightEntry, getBodyweightSummaryAction } from '@/actions/bodyweight';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Scale, Plus, Calendar, TrendingDown, ArrowDownRight } from 'lucide-react';
+import { Scale, Plus, Calendar, TrendingDown, ArrowDownRight, Trash2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -16,25 +16,75 @@ import {
   CartesianGrid,
 } from 'recharts';
 
-export const BodyweightView: React.FC = () => {
-  const [logs, setLogs] = useState<BodyweightEntry[]>(() => getBodyweightLogs());
+interface BodyweightViewProps {
+  initialSummary?: BodyweightSummaryDTO;
+}
+
+export const BodyweightView: React.FC<BodyweightViewProps> = ({ initialSummary }) => {
+  const [summary, setSummary] = useState<BodyweightSummaryDTO>(() => initialSummary ?? {
+    currentWeight: null,
+    startWeight: null,
+    startDate: null,
+    netChange: null,
+    trend: null,
+    logs: [],
+  });
+
   const [newWeight, setNewWeight] = useState<string>('80.5');
   const [showLogModal, setShowLogModal] = useState<boolean>(false);
+  const [pending, setPending] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const currentWeight = logs[logs.length - 1]?.weightKg || 0;
-  const startWeight = logs[0]?.weightKg || 0;
-  const netChange = Math.round((currentWeight - startWeight) * 10) / 10;
+  const logs = summary.logs;
+  const currentWeight = summary.currentWeight ?? (logs[logs.length - 1]?.weightKg || 0);
+  const startWeight = summary.startWeight ?? (logs[0]?.weightKg || 0);
+  const netChange = summary.netChange ?? Math.round((currentWeight - startWeight) * 10) / 10;
 
-  const handleAddLog = () => {
+  const refreshSummary = async () => {
+    const res = await getBodyweightSummaryAction();
+    if (res.ok) {
+      setSummary(res.data);
+    }
+  };
+
+  const handleAddLog = async () => {
     const val = parseFloat(newWeight);
-    if (!val || val <= 0) return;
-    const newEntry: BodyweightEntry = {
-      id: `bw-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
+    if (isNaN(val) || val < 20 || val > 500) {
+      setErrorMsg('Weight must be between 20 and 500 kg.');
+      return;
+    }
+    setErrorMsg(null);
+    setPending(true);
+
+    const today = new Date().toISOString().split('T')[0];
+    const res = await logBodyweight({
+      date: today,
       weightKg: val,
-    };
-    setLogs([...logs, newEntry]);
+    });
+
+    setPending(false);
+
+    if (!res.ok) {
+      setErrorMsg(res.message);
+      return;
+    }
+
     setShowLogModal(false);
+    await refreshSummary();
+  };
+
+  const handleDeleteEntry = async (id: string) => {
+    setPending(true);
+    setErrorMsg(null);
+    const res = await deleteBodyweightEntry({ id });
+    setPending(false);
+
+    if (!res.ok) {
+      setErrorMsg(res.message);
+      return;
+    }
+
+    await refreshSummary();
   };
 
   return (
@@ -51,20 +101,34 @@ export const BodyweightView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setShowLogModal(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-[#40534C] hover:bg-[#677D6A] text-[#DFD0B8] font-mono text-xs uppercase tracking-wider rounded-xs border border-[#677D6A] transition-all"
+          onClick={() => {
+            setErrorMsg(null);
+            setShowLogModal(true);
+          }}
+          disabled={pending}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-[#40534C] hover:bg-[#677D6A] text-[#DFD0B8] font-mono text-xs uppercase tracking-wider rounded-xs border border-[#677D6A] transition-all disabled:opacity-50"
         >
           <Plus className="w-4 h-4" />
           <span>Log Weight</span>
         </button>
       </div>
 
+      {errorMsg && (
+        <div className="p-3 bg-[#3A1C1C] border border-[#8B0000] text-[#FF9999] font-mono text-xs rounded-xs flex items-center justify-between">
+          <span>{errorMsg}</span>
+          <button onClick={() => setErrorMsg(null)} className="text-xs uppercase font-bold underline">Dismiss</button>
+        </div>
+      )}
+
       {logs.length === 0 ? (
         <EmptyState
           title="No Bodyweight Entries Logged"
           description="Log your daily or weekly bodyweight to begin tracking weight trend over time."
           actionLabel="Log Weight Now"
-          onAction={() => setShowLogModal(true)}
+          onAction={() => {
+            setErrorMsg(null);
+            setShowLogModal(true);
+          }}
           icon={<Scale className="w-6 h-6 text-[#677D6A]" />}
         />
       ) : (
@@ -80,7 +144,7 @@ export const BodyweightView: React.FC = () => {
             <RunePanel variant="carved" className="p-4 space-y-1">
               <div className="text-[10px] font-mono text-[#948979] uppercase">STARTING WEIGHT</div>
               <div className="font-mono text-2xl font-bold text-[#948979]">{startWeight} <span className="text-xs text-[#635B50]">kg</span></div>
-              <div className="text-[11px] font-mono text-[#948979]">{logs[0]?.date}</div>
+              <div className="text-[11px] font-mono text-[#948979]">{summary.startDate || logs[0]?.date}</div>
             </RunePanel>
 
             <RunePanel variant="carved" className="p-4 space-y-1">
@@ -138,7 +202,18 @@ export const BodyweightView: React.FC = () => {
                     <Calendar className="w-3.5 h-3.5" />
                     <span>{entry.date}</span>
                   </div>
-                  <span className="font-bold text-[#DFD0B8]">{entry.weightKg} kg</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-[#DFD0B8]">{entry.weightKg} kg</span>
+                    <button
+                      onClick={() => handleDeleteEntry(entry.id)}
+                      disabled={pending}
+                      data-testid={`delete-bw-${entry.id}`}
+                      className="text-[#948979] hover:text-[#FF9999] transition-colors p-1"
+                      title="Delete entry"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -152,10 +227,13 @@ export const BodyweightView: React.FC = () => {
           <div className="bg-[#1C2128] border border-[#677D6A] p-5 rounded-xs max-w-xs w-full space-y-4 rune-panel">
             <h3 className="font-mono text-sm font-bold text-[#DFD0B8] uppercase">LOG TODAY&apos;S WEIGHT</h3>
             <div>
-              <label className="block text-xs font-mono text-[#948979] mb-1">Bodyweight (kg)</label>
+              <label htmlFor="bw-weight-input" className="block text-xs font-mono text-[#948979] mb-1">Bodyweight (kg)</label>
               <input
+                id="bw-weight-input"
                 type="number"
                 step="0.1"
+                min="20"
+                max="500"
                 value={newWeight}
                 onChange={(e) => setNewWeight(e.target.value)}
                 className="w-full bg-[#222831] border border-[#393E46] p-2 text-center text-lg font-mono font-bold text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
@@ -165,15 +243,17 @@ export const BodyweightView: React.FC = () => {
             <div className="flex justify-end gap-2 pt-2 border-t border-[#393E46]">
               <button
                 onClick={() => setShowLogModal(false)}
+                disabled={pending}
                 className="px-3 py-1.5 bg-[#222831] text-[#948979] font-mono text-xs rounded-xs"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddLog}
-                className="px-4 py-1.5 bg-[#40534C] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A]"
+                disabled={pending}
+                className="px-4 py-1.5 bg-[#40534C] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A] disabled:opacity-50"
               >
-                Save
+                {pending ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
