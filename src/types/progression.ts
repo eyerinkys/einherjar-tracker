@@ -117,3 +117,52 @@ export interface DerivedWorkoutFacts {
   facts: WorkoutFact[];
   recentDirection: WorkoutMetricChanges | null;
 }
+
+interface PersonalRecordAchievementBase {
+  exerciseId: string;
+  exerciseName: string;
+  sessionId: string;
+  sessionExerciseId: string;
+  achievedAt: string;
+}
+
+export interface HighestLoadRecordAchievement extends PersonalRecordAchievementBase {
+  type: 'HIGHEST_LOAD';
+  loadKg: number;
+  previousBestKg: number | null;
+}
+
+export interface RepsAtLoadRecordAchievement extends PersonalRecordAchievementBase {
+  type: 'REPS_AT_LOAD';
+  loadKg: number | null;
+  reps: number;
+  previousBestReps: number | null;
+}
+
+export interface Estimated1RMRecordAchievement extends PersonalRecordAchievementBase {
+  type: 'ESTIMATED_1RM';
+  estimated1RMKg: number;
+  previousBestEstimated1RMKg: number | null;
+}
+
+export interface SessionVolumeRecordAchievement extends PersonalRecordAchievementBase {
+  type: 'SESSION_VOLUME';
+  volumeKg: number;
+  previousBestVolumeKg: number | null;
+}
+
+export type PersonalRecordAchievement =
+  | HighestLoadRecordAchievement
+  | RepsAtLoadRecordAchievement
+  | Estimated1RMRecordAchievement
+  | SessionVolumeRecordAchievement;
+
+export interface DerivedPersonalRecords {
+  achievements: PersonalRecordAchievement[];
+  current: {
+    highestLoad: HighestLoadRecordAchievement | null;
+    repsAtLoad: RepsAtLoadRecordAchievement[];
+    estimated1RM: Estimated1RMRecordAchievement | null;
+    sessionVolume: SessionVolumeRecordAchievement | null;
+  };
+}

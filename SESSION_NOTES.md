@@ -265,6 +265,23 @@
 
 ## Next handoff after Phase 6A
 
-1. Implement only Phase 6B — PR derivation — against the reviewed `DerivedWorkoutFacts` contract.
-2. Compare each fact only with earlier chronological facts and derive the four approved PR types without future leakage or persisted PR source-of-truth rows.
-3. Preserve the closed Phase 3–5 hosted/browser evidence. Phase 6B remains pure unless its implementation materially changes an existing server/database/UI boundary.
+1. Phase 6B is complete. Begin only Phase 6C — progression classification — against the reviewed `DerivedWorkoutFacts` and `DerivedPersonalRecords` contracts.
+2. Apply the six-status precedence exactly as approved and return machine-readable evidence plus concise deterministic explanations; do not connect the UI yet.
+3. Preserve the closed Phase 3–5 hosted/browser evidence. Phase 6C should remain pure unless its implementation materially changes an existing server/database/UI boundary.
+
+## Phase 6B — deterministic personal-record derivation
+
+- Added a pure PR boundary over the reviewed chronological `DerivedWorkoutFacts` output. It does not query a database, accept arbitrary client history, write derived state, call AI, or alter an authenticated/UI boundary.
+- Each valid first observation establishes a baseline record. Later achievements require a strict improvement over all earlier chronological facts, so equal values do not create duplicate PR events and future facts cannot affect earlier achievements.
+- The discriminated achievement feed and current-record snapshot cover the four approved record types: highest completed-set load, maximum reps at each exact weighted/bodyweight load, best estimated 1RM, and full completed-session volume.
+- Every achievement retains its exercise/session snapshot identity, completion timestamp, objective value, and the previous best when one exists. Bodyweight rep records use the explicit null-load key without fabricating load, estimated-1RM, or volume records.
+- Current reps-at-load records are deterministically ordered by exact load. Fact inputs are copied and sorted by completion timestamp plus stable session ties, so repeated or reordered inputs produce identical output without mutation.
+- Extra completed sets participate in the full-session metrics owned by Phase 6A. An extra set can therefore establish a session-volume PR while unchanged planned work and unchanged maxima do not generate unrelated PR achievements.
+
+## Phase 6B verification — 2026-08-09
+
+- Test-first development observed both the missing module and the intended empty-result behavior failure before the derivation implementation. A further red/green cycle made estimated-1RM and volume previous-best fields explicit about their units.
+- The focused progression gate passed 2 files and 19 tests. Coverage proves all four record types, first-observation baselines, strict improvements, chronology/no future leakage, exact-load and bodyweight reps, extra-set volume behavior, corrected-history recalculation, input immutability, and reordered-input determinism.
+- Fresh full local gate under Node v24.18.0 and pnpm 11.20.0: `pnpm test` passed 32 files and 237 tests with the existing 3 opt-in files / 8 tests skipped; `pnpm typecheck`, `pnpm lint`, the webpack `pnpm build`, and `git diff --check` passed.
+- A bounded mutation review checked strict-versus-equal comparisons, earlier-only record state, full-session versus planned volume, exact-load keys, bodyweight null handling, chronological ties, and copied sorting. No Critical or Important issue remained.
+- No schema/migration, hosted database mutation, browser fixture, production deployment, or live application verification was needed because Phase 6B is a pure local calculation layer.
