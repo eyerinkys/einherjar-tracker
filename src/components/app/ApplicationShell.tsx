@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { SplitDay, CompletedSession, Exercise } from '@/types';
+import { ActiveWorkout, SplitDay, CompletedSession, Exercise } from '@/types';
 import { getWorkoutHistory } from '@/services/dataService';
 import { Header } from '@/components/layout/Header';
 import { Navigation, NavTab } from '@/components/layout/Navigation';
@@ -16,6 +16,7 @@ import { PhotosView } from '@/components/screens/PhotosView';
 interface ApplicationShellProps {
   exercises: Exercise[];
   initialSplitDays: SplitDay[];
+  initialActiveWorkout: ActiveWorkout | null;
   user: {
     id: string;
     name: string;
@@ -23,9 +24,12 @@ interface ApplicationShellProps {
   };
 }
 
-export function ApplicationShell({ exercises, initialSplitDays, user }: ApplicationShellProps) {
+export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, user }: ApplicationShellProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('train');
   const [splitPending, setSplitPending] = useState(false);
+  const [workoutPending, setWorkoutPending] = useState(false);
+  const [workoutState, setWorkoutState] = useState(() => ({ source: initialActiveWorkout, value: initialActiveWorkout }));
+  const activeWorkout = workoutState.source === initialActiveWorkout ? workoutState.value : initialActiveWorkout;
   const [progressSubTab, setProgressSubTab] = useState<'exercise' | 'analytics'>('exercise');
   const [splitState, setSplitState] = useState(() => ({
     source: initialSplitDays,
@@ -33,14 +37,10 @@ export function ApplicationShell({ exercises, initialSplitDays, user }: Applicat
   }));
   const splitDays =
     splitState.source === initialSplitDays ? splitState.value : initialSplitDays;
-  const [sessions, setSessions] = useState<CompletedSession[]>(() => getWorkoutHistory());
+  const [sessions] = useState<CompletedSession[]>(() => getWorkoutHistory());
 
   const handleUpdateSplitDays = (days: SplitDay[]) => {
     setSplitState({ source: initialSplitDays, value: days });
-  };
-
-  const handleSaveSession = (newSession: CompletedSession) => {
-    setSessions((currentSessions) => [newSession, ...currentSessions]);
   };
 
   return (
@@ -48,7 +48,7 @@ export function ApplicationShell({ exercises, initialSplitDays, user }: Applicat
       <Header activeTab={activeTab} user={user} />
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto pb-20 md:pb-6">
-        <Navigation activeTab={activeTab} disabled={splitPending} onSelectTab={setActiveTab} />
+        <Navigation activeTab={activeTab} disabled={splitPending || workoutPending} onSelectTab={setActiveTab} />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl overflow-y-auto">
           {activeTab === 'split' ? (
@@ -61,7 +61,7 @@ export function ApplicationShell({ exercises, initialSplitDays, user }: Applicat
           ) : null}
 
           {activeTab === 'train' ? (
-            <TrainView splitDays={splitDays} onSaveSession={handleSaveSession} />
+            <TrainView splitDays={splitDays} activeWorkout={activeWorkout} onWorkoutChange={(value) => setWorkoutState({ source: initialActiveWorkout, value })} onPendingChange={setWorkoutPending} />
           ) : null}
 
           {activeTab === 'history' ? <HistoryView sessions={sessions} /> : null}

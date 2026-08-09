@@ -1,16 +1,18 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Exercise, SplitDay } from '@/types';
 
-const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays } = vi.hoisted(() => ({
+const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays, getActiveWorkout, startWorkout } = vi.hoisted(() => ({
   addSplitExercise: vi.fn(),
   createSplitDay: vi.fn(),
   getSession: vi.fn(),
   getExercises: vi.fn(),
   getSplitDays: vi.fn(),
+  getActiveWorkout: vi.fn(),
+  startWorkout: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({ headers: vi.fn().mockResolvedValue(new Headers()) }));
@@ -21,6 +23,10 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/auth', () => ({ auth: { api: { getSession } } }));
 vi.mock('@/server/queries/exercises', () => ({ getExercises }));
 vi.mock('@/server/queries/splits', () => ({ getSplitDays }));
+vi.mock('@/server/queries/workouts', () => ({ getActiveWorkout }));
+vi.mock('@/actions/workouts', () => ({
+  completeWorkout: vi.fn(), discardWorkout: vi.fn(), saveWorkoutDraft: vi.fn(), startWorkout,
+}));
 vi.mock('@/actions/split', () => ({
   addSplitExercise,
   createSplitDay,
@@ -67,6 +73,10 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+beforeEach(() => {
+  getActiveWorkout.mockResolvedValue(null);
+});
+
 describe('protected application hydration', () => {
   it('starts independent exercise and split queries in parallel', async () => {
     const exerciseRequest = deferred<Exercise[]>();
@@ -102,6 +112,7 @@ describe('protected application hydration', () => {
     expect(screen.getByRole('button', { name: /Add exercise/i })).toBeTruthy();
     expect(getExercises).toHaveBeenCalledWith('trusted-user');
     expect(getSplitDays).toHaveBeenCalledWith('trusted-user');
+    expect(getActiveWorkout).toHaveBeenCalledWith('trusted-user');
   });
 
   it('uses the persistent exercise DTOs on the Progress screen', async () => {
@@ -147,6 +158,27 @@ describe('protected application hydration', () => {
       ok: true,
       data: [{ ...persistentSplit[0], exercises: [addedExercise] }],
     });
+    startWorkout.mockResolvedValue({
+      ok: true,
+      data: {
+        id: '00000000-0000-4000-8000-000000000030',
+        sourceSplitDayId: persistentSplit[0].id,
+        splitDayName: persistentSplit[0].name,
+        startedAt: '2026-08-09T03:00:00.000Z',
+        version: 1,
+        notes: '',
+        exercises: [{
+          id: '00000000-0000-4000-8000-000000000031',
+          exerciseId: addedExercise.exerciseId,
+          exerciseName: addedExercise.exerciseName,
+          targetSets: 3,
+          targetRepMin: 8,
+          targetRepMax: 10,
+          previousPerformance: [],
+          sets: [{ id: '00000000-0000-4000-8000-000000000032', setNumber: 1, weight: null, reps: 8, isCompleted: false }],
+        }],
+      },
+    });
 
     render(await Home());
     await userEvent.click(screen.getAllByRole('button', { name: 'Split' })[0]);
@@ -155,7 +187,8 @@ describe('protected application hydration', () => {
     expect(await screen.findByRole('heading', { name: 'Standing Press' })).toBeTruthy();
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Train' })[0]);
-    expect(screen.getByRole('heading', { name: 'Standing Press' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Start workout' }));
+    expect(await screen.findByRole('heading', { name: 'Standing Press' })).toBeTruthy();
   });
 
   it('reconciles refreshed server DTO props into the current client split state', async () => {

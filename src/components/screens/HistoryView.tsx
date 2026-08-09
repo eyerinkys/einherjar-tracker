@@ -46,7 +46,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ sessions }) => {
           {sessions.map((sess) => {
             const isExpanded = expandedSessionId === sess.id;
             const totalVolumeKg = sess.exercises.reduce((acc, ex) => {
-              return acc + ex.sets.reduce((sAcc, s) => sAcc + (s.weight * s.reps), 0);
+              return acc + ex.sets.reduce((sAcc, s) => sAcc + ((s.weight ?? 0) * (s.reps ?? 0)), 0);
             }, 0);
 
             return (

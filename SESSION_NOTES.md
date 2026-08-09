@@ -182,8 +182,38 @@
 - Hosted verification has now been performed as recorded above; it did not deploy application code or reset/delete the hosted branch.
 - Current Phase 3 implementation commits are `702aaaa`, `7a79066`, `957a9cf`, `2e5aa40`, `e008530`, and `2ee60c0`. The current scoped closeout changes are the Split ownership predicate, its SQL regression assertion, the integration fixture teardown, and this handoff; the pre-existing `RULES.md` edit remains preserved.
 
+## Phase 4 — persistent workout logging
+
+- Added server-only active-workout reads and explicit serializable DTO mapping for session/exercise/set snapshots, exact PostgreSQL numeric conversion, stable database IDs, notes, timestamps, and optimistic versions.
+- Added bounded Zod contracts and four authenticated Server Actions: `startWorkout`, `saveWorkoutDraft`, `discardWorkout`, and `completeWorkout`. Client inputs cannot supply owners, names, timestamps, duration, or snapshot values.
+- Starting a workout locks the authenticated user, returns an existing active session when present, verifies an owned non-empty Split day, snapshots its name/exercise order/targets/notes, and creates incomplete draft slots. The most recent completed set values prefill matching slots when available; no progression or Groq call runs in the transaction.
+- Draft saves replace the complete owned set structure atomically, retain stable set IDs, normalize set numbers, update notes, and increment `version`. Missing/foreign IDs return enumeration-safe `NOT_FOUND`; stale versions or incomplete owned structures return `CONFLICT` without overwriting the newer draft.
+- Completion applies the submitted draft and closes the workout in one transaction, requires at least one completed set, rolls back invalid completion attempts, deletes incomplete placeholders, derives completion time/duration on the server, and leaves the stored Split/exercise snapshot immutable. Retried completion cannot create a duplicate completed session.
+- Discard requires the owner and current active version, then relies on the existing cascade to remove the draft. The Phase 1 partial unique index remains the database backstop for one active workout per user; no schema change or migration was required.
+- The protected root now loads exercises, Split days, and the active workout in parallel. Train starts explicitly, resumes after refresh/sign-in, keeps typing local until Save/Finish, supports direct mobile numeric entry plus add/remove/toggle controls, preserves edits on errors, exposes reload recovery for conflicts, contains duplicate submissions/navigation while pending, confirms discard inline, and displays server-derived duration after completion.
+- Removed Train's direct workout-history/progression mock reads. History remains mock-backed until its owning Phase 5; completing Phase 4 does not synthesize a client-only history record.
+
+## Phase 4 verification
+
+- Runtime: Node v24.18.0 and pnpm 11.20.0.
+- Test-first focused cycles covered validation, DTO mapping, action authentication/error redaction, ownership/concurrency invariants, server hydration, direct numeric editing, stable set add/remove, save/reload, stale conflict recovery, discard confirmation, completion, deleted-day fallback, and the protected final set.
+- Final local gate: `pnpm test` passed 24 files and 169 tests with 3 opt-in files / 8 tests skipped; `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `git diff --check` passed.
+- The strengthened opt-in PostgreSQL suite ran against hosted branch `br-dawn-mountain-azrfoy6x` through the mode-600 root `.env`: 1 file and 1 end-to-end transaction test passed. It exercised active-session reuse plus the unique index, save/reload, stale versions, cross-user start/save/discard/complete denial, atomic invalid-completion rollback, snapshot survival after Split rename/target edit/deletion, incomplete-set filtering, idempotent completion retry with one stored session, and exact fixture cleanup assertions.
+- A source-current Node v24.18.0 webpack production build passed after the four exported Server Actions were declared with Next.js's required `async` syntax.
+- The one bounded Impeccable detector run returned `[]` for the changed Train/SetEntry/ApplicationShell surfaces.
+- Real Chromium verification used an exact temporary allowlisted account against the local production bundle and hosted database. On iPhone 15 emulation (393x659), numeric entry, completion toggle, add/remove, Save, reload/resume, and Finish persisted; the completed result displayed a server-derived 3-minute duration. Desktop 1440x1000 and mobile both had `scrollWidth === innerWidth`; the final console reported 0 errors and 0 warnings. Screenshots were inspected and then kept only in `/tmp`.
+- The temporary browser user was deleted by exact email after verification; the delete cascaded its Split/workout/auth rows, and read-back returned 0 remaining users for that email. The temporary Playwright workspace directory was removed. No deployment was performed.
+
+## Phase 4 power-cut recovery — 2026-08-09
+
+- Recovered the complete uncommitted Phase 4 working tree from the root checkout and checked it against the approved Phase 4 plan before making further changes.
+- Added a failing transport-interruption regression after confirming that a rejected Server Action left Train controls and app navigation permanently pending. All four workout mutations now share guarded `try`/`catch`/`finally` handling, retain the local draft, show a safe retryable error, and always release pending state.
+- Added a failing deleted-source-Split regression after review found that an active snapshot-backed workout was hidden when `splitDays` became empty. Train now prioritizes an existing active workout, so save, finish, and discard remain available after the last source Split day is deleted.
+- Fresh Node v24.18.0 recovery gate: the focused Train suite passed 9 tests; the full suite passed 24 files and 171 tests with 3 opt-in files / 8 tests skipped; `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` passed.
+- Final independent re-review confirmed both recovery defects resolved, with no remaining Critical or Important findings. The transaction implementation, schema, and hosted target were unchanged, so the already-recorded hosted PostgreSQL/browser evidence was preserved and no database mutation, browser account, migration, or deployment was performed during recovery.
+
 ## Next handoff
 
-1. Begin Phase 4 — Workout Logging from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`, starting with 4A start/resume/discard lifecycle.
+1. Begin Phase 5 — Previous Performance + History from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
 2. Continue using hosted branch `br-dawn-mountain-azrfoy6x` through the ignored root `.env`; do not create a disposable database branch or reset/delete the hosted branch.
-3. Preserve the closed Phase 3 evidence above. Rerun Phase 3 checks only when a later change touches those ownership, transaction, or Split UI paths.
+3. Preserve the closed Phase 3 and Phase 4 evidence above. Rerun their hosted/browser checks only when a later change touches those transaction, ownership, or UI paths.
