@@ -2,6 +2,8 @@
 
 ## Current backend implementation state
 
+- The approved Phase 8 implementation plan is `docs/superpowers/plans/2026-08-09-phase-8-groq-ai-layer.md`.
+- Phase 8 Groq AI Layer is fully implemented and verified against the live Groq API using model `openai/gpt-oss-20b`.
 - The approved backend implementation plan is `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
 - Phase 1A-1C, the reviewed build-toolchain fix, and production verification were merged into `main` at `1cf1427`. The linked worktree and fully merged local feature branch were then removed, leaving the project root as the single working checkout.
 - The schema uses exact PostgreSQL `numeric` workout loads, generated Better Auth/domain migrations, safe database-check diagnostics, and table-bound live catalog assertions for the Phase 1 contract.
@@ -33,9 +35,9 @@
 
 ## Verification evidence
 
-- `pnpm test` - 6 files, 27 tests passed.
-- `pnpm typecheck` - passed.
-- `pnpm lint` - passed.
+- `pnpm verify:groq` - live Groq API call succeeded using `openai/gpt-oss-20b` with strict `json_schema` response format in ~1.1s.
+- `pnpm test` - 40 files, 302 tests passed.
+- `pnpm typecheck` - passed with 0 errors.
 - `pnpm exec drizzle-kit check` - passed.
 - `pnpm db:generate` - no pending schema changes on the final rerun.
 - `pnpm db:migrate` - applied the exact migration to blank production; a second run completed safely.
