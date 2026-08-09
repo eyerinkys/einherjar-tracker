@@ -1,7 +1,6 @@
-import 'server-only';
-import { db } from '@/db/client';
+import { getDb } from '@/db/client';
 import { bodyweightLogs } from '@/db/schema';
-import { eq, asc, sql } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import type { BodyweightEntry, BodyweightSummaryDTO } from '@/types';
 
 export function bodyweightLogsForUserWhere(userId: string) {
@@ -56,7 +55,7 @@ export function calculateBodyweightSummary(logs: BodyweightEntry[]): BodyweightS
 }
 
 export async function getBodyweightLogs(userId: string): Promise<BodyweightEntry[]> {
-  const rows = await db
+  const rows = await getDb()
     .select({
       id: bodyweightLogs.id,
       date: bodyweightLogs.date,

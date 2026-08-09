@@ -10,10 +10,10 @@ vi.mock('@/server/queries/bodyweight', () => ({
   getBodyweightSummary: vi.fn(),
 }));
 vi.mock('@/db/client', () => ({
-  db: {
+  getDb: vi.fn(() => ({
     insert: vi.fn(),
     delete: vi.fn(),
-  },
+  })),
 }));
 
 describe('bodyweight Server Actions', () => {

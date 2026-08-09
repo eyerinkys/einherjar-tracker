@@ -5,7 +5,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CompletedWorkoutHistoryPage, Exercise, ExerciseHistory, SplitDay } from '@/types';
 
-const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays, getActiveWorkout, getCompletedSessionHistory, getExerciseHistory, startWorkout } = vi.hoisted(() => ({
+const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays, getActiveWorkout, getCompletedSessionHistory, getExerciseHistory, getBodyweightSummary, startWorkout } = vi.hoisted(() => ({
   addSplitExercise: vi.fn(),
   createSplitDay: vi.fn(),
   getSession: vi.fn(),
@@ -14,9 +14,11 @@ const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays
   getActiveWorkout: vi.fn(),
   getCompletedSessionHistory: vi.fn(),
   getExerciseHistory: vi.fn(),
+  getBodyweightSummary: vi.fn(),
   startWorkout: vi.fn(),
 }));
 
+vi.mock('server-only', () => ({}));
 vi.mock('next/headers', () => ({ headers: vi.fn().mockResolvedValue(new Headers()) }));
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
@@ -27,6 +29,7 @@ vi.mock('@/server/queries/exercises', () => ({ getExercises }));
 vi.mock('@/server/queries/splits', () => ({ getSplitDays }));
 vi.mock('@/server/queries/workouts', () => ({ getActiveWorkout }));
 vi.mock('@/server/queries/history', () => ({ getCompletedSessionHistory, getExerciseHistory }));
+vi.mock('@/server/queries/bodyweight', () => ({ getBodyweightSummary }));
 vi.mock('@/actions/history', () => ({
   getCompletedWorkoutHistory: vi.fn(),
   getExerciseWorkoutHistory: vi.fn(),
@@ -114,6 +117,7 @@ afterEach(() => {
 beforeEach(() => {
   getActiveWorkout.mockResolvedValue(null);
   getCompletedSessionHistory.mockResolvedValue({ sessions: [], nextCursor: null });
+  getBodyweightSummary.mockResolvedValue({ currentWeight: null, startWeight: null, startDate: null, netChange: null, trend: null, logs: [] });
   getExerciseHistory.mockImplementation(async (_userId: string, exerciseId: string) => ({
     exercise: persistentExercises.find(({ id }) => id === exerciseId) ?? persistentExercises[0],
     sessions: [],

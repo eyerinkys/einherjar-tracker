@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@/db/client';
+import { getDb } from '@/db/client';
 import { bodyweightLogs } from '@/db/schema';
 import { requireUser } from '@/server/auth/require-user';
 import { AuthenticationError } from '@/server/auth/session';
@@ -20,7 +20,7 @@ export async function logBodyweight(input: unknown): Promise<ActionResult<Bodywe
     const user = await requireUser();
     const parsed = logBodyweightSchema.parse(input);
 
-    const [row] = await db
+    const [row] = await getDb()
       .insert(bodyweightLogs)
       .values({
         userId: user.id,
@@ -79,7 +79,7 @@ export async function deleteBodyweightEntry(input: unknown): Promise<ActionResul
     const user = await requireUser();
     const parsed = deleteBodyweightSchema.parse(input);
 
-    const deleted = await db
+    const deleted = await getDb()
       .delete(bodyweightLogs)
       .where(and(eq(bodyweightLogs.id, parsed.id), eq(bodyweightLogs.userId, user.id)))
       .returning({ id: bodyweightLogs.id });
