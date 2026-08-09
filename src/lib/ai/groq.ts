@@ -1,7 +1,7 @@
 import { GROQ_AI_RECOMMENDATION_JSON_SCHEMA } from './schemas';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const DEFAULT_MODEL = 'llama3-70b-8192';
+const DEFAULT_MODEL = 'openai/gpt-oss-20b';
 
 export class GroqClientError extends Error {
   constructor(message: string, public readonly status?: number, public readonly code?: string) {

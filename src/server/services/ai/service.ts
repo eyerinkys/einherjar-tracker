@@ -118,7 +118,7 @@ export async function getAiGuidanceForExercise(
   const timeout = setTimeout(() => abortController.abort(), GROQ_TIMEOUT);
 
   try {
-    const recommendation = await fetchGroqRecommendation(SYSTEM_PROMPT, prompt, apiKey, 'llama3-70b-8192', abortController.signal);
+    const recommendation = await fetchGroqRecommendation(SYSTEM_PROMPT, prompt, apiKey, 'openai/gpt-oss-20b', abortController.signal);
     
     // Validate Semantics
     // Transform history for semantic validation
@@ -141,14 +141,14 @@ export async function getAiGuidanceForExercise(
       exerciseId,
       contextHash: context.contextHash,
       responseJson: recommendation,
-      model: 'llama3-70b-8192',
+      model: 'openai/gpt-oss-20b',
       lastAttemptAt: new Date(),
     }).onConflictDoUpdate({
       target: [aiGuidanceCache.userId, aiGuidanceCache.exerciseId],
       set: {
         contextHash: context.contextHash,
         responseJson: recommendation,
-        model: 'llama3-70b-8192',
+        model: 'openai/gpt-oss-20b',
         failureCode: null,
         lastAttemptAt: new Date(),
         retryAfter: null,
@@ -172,7 +172,7 @@ export async function getAiGuidanceForExercise(
       userId,
       exerciseId,
       contextHash: context.contextHash,
-      model: 'llama3-70b-8192',
+      model: 'openai/gpt-oss-20b',
       failureCode,
       lastAttemptAt: new Date(),
       retryAfter: retryAfterDate,
@@ -181,7 +181,7 @@ export async function getAiGuidanceForExercise(
       set: {
         contextHash: context.contextHash,
         responseJson: null,
-        model: 'llama3-70b-8192',
+        model: 'openai/gpt-oss-20b',
         failureCode,
         lastAttemptAt: new Date(),
         retryAfter: retryAfterDate,
