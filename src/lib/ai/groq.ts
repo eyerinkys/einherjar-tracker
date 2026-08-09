@@ -14,7 +14,8 @@ export async function fetchGroqRecommendation(
   systemPrompt: string,
   userPrompt: string,
   apiKey: string,
-  model = DEFAULT_MODEL
+  model = DEFAULT_MODEL,
+  signal?: AbortSignal
 ) {
   if (!apiKey) {
     throw new GroqClientError('Groq API key is missing');
@@ -22,6 +23,7 @@ export async function fetchGroqRecommendation(
 
   const response = await fetch(GROQ_API_URL, {
     method: 'POST',
+    signal,
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
