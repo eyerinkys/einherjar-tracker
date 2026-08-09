@@ -125,6 +125,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
       setCustomExerciseError('Equipment type is required.');
       return;
     }
+    if (targetRepMinInput > targetRepMaxInput) {
+      setCustomExerciseError('Minimum reps cannot exceed maximum reps.');
+      return;
+    }
 
     setIsSubmittingCustom(true);
     try {
@@ -137,15 +141,28 @@ export const SplitView: React.FC<SplitViewProps> = ({
 
       if (!result.ok) {
         setCustomExerciseError(result.message);
+        setIsSubmittingCustom(false);
         return;
       }
 
       onExerciseCreated?.(result.data);
-      setSelectedAddExerciseId(result.data.id);
-      setIsCreatingCustom(false);
-      setCustomName('');
-      setCustomMuscleGroup('');
-      setCustomEquipment('');
+
+      if (currentDay) {
+        await commitMutation(
+          () =>
+            addSplitExercise({
+              splitDayId: currentDay.id,
+              exerciseId: result.data.id,
+              targetSets: targetSetsInput,
+              targetRepMin: targetRepMinInput,
+              targetRepMax: targetRepMaxInput,
+            }),
+          closeAddExercise,
+          'addExercise',
+        );
+      } else {
+        closeAddExercise();
+      }
     } catch {
       setCustomExerciseError('Failed to create custom exercise.');
     } finally {
@@ -249,6 +266,16 @@ export const SplitView: React.FC<SplitViewProps> = ({
     setMutationErrorLocation('global');
     setMutationRecovery('retry');
     retryOperation.current = null;
+    setSelectedAddExerciseId(availableExercises[0]?.id || '');
+    setIsCreatingCustom(false);
+    setCustomName('');
+    setCustomMuscleGroup('');
+    setCustomEquipment('');
+    setCustomCategory('compound');
+    setCustomExerciseError(null);
+    setTargetSetsInput(3);
+    setTargetRepMinInput(8);
+    setTargetRepMaxInput(10);
     setShowAddModal(true);
   };
 
@@ -1245,14 +1272,6 @@ export const SplitView: React.FC<SplitViewProps> = ({
                       <option value="isolation">Isolation</option>
                     </select>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCreateCustomExercise}
-                    disabled={isSubmittingCustom}
-                    className="w-full py-2 bg-[#677D6A] text-[#161A20] font-bold text-xs uppercase tracking-wider rounded-xs hover:bg-[#8DAA91] transition-colors"
-                  >
-                    {isSubmittingCustom ? 'Creating...' : 'Save & Select Custom Exercise'}
-                  </button>
                 </div>
               )}
 
@@ -1268,7 +1287,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
                       setAddExerciseError(null);
                     }}
                     className="min-h-11 w-full bg-[#222831] border border-[#393E46] p-2 text-center text-base text-[#DFD0B8] rounded-xs"
-                    disabled={isPending}
+                    disabled={isPending || isSubmittingCustom}
                     min={1}
                     max={20}
                   />
@@ -1285,7 +1304,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
                       setAddExerciseError(null);
                     }}
                     className="min-h-11 w-full bg-[#222831] border border-[#393E46] p-2 text-center text-base text-[#DFD0B8] rounded-xs"
-                    disabled={isPending}
+                    disabled={isPending || isSubmittingCustom}
                     min={1}
                     max={100}
                   />
@@ -1301,7 +1320,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
                       setAddExerciseError(null);
                     }}
                     className="min-h-11 w-full bg-[#222831] border border-[#393E46] p-2 text-center text-base text-[#DFD0B8] rounded-xs"
-                    disabled={isPending}
+                    disabled={isPending || isSubmittingCustom}
                     min={1}
                     max={100}
                   />
@@ -1313,19 +1332,30 @@ export const SplitView: React.FC<SplitViewProps> = ({
               <button
                 onClick={closeAddExercise}
                 className="min-h-11 px-4 bg-[#222831] border border-[#393E46] text-[#948979] font-mono text-xs rounded-xs hover:text-[#DFD0B8]"
-                disabled={isPending}
+                disabled={isPending || isSubmittingCustom}
                 type="button"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleAddExercise}
-                className="min-h-11 px-4 bg-[#40534C] border border-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A]"
-                disabled={isPending}
-                type="button"
-              >
-                Add to Day
-              </button>
+              {isCreatingCustom ? (
+                <button
+                  onClick={handleCreateCustomExercise}
+                  className="min-h-11 px-4 bg-[#40534C] border border-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A] disabled:opacity-50"
+                  disabled={isPending || isSubmittingCustom}
+                  type="button"
+                >
+                  {isSubmittingCustom ? 'Creating...' : 'Create & Add to Day'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleAddExercise}
+                  className="min-h-11 px-4 bg-[#40534C] border border-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A] disabled:opacity-50"
+                  disabled={isPending || isSubmittingCustom}
+                  type="button"
+                >
+                  Add to Day
+                </button>
+              )}
             </div>
           </div>
         </div>
