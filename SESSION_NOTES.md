@@ -285,3 +285,50 @@
 - Fresh full local gate under Node v24.18.0 and pnpm 11.20.0: `pnpm test` passed 32 files and 237 tests with the existing 3 opt-in files / 8 tests skipped; `pnpm typecheck`, `pnpm lint`, the webpack `pnpm build`, and `git diff --check` passed.
 - A bounded mutation review checked strict-versus-equal comparisons, earlier-only record state, full-session versus planned volume, exact-load keys, bodyweight null handling, chronological ties, and copied sorting. No Critical or Important issue remained.
 - No schema/migration, hosted database mutation, browser fixture, production deployment, or live application verification was needed because Phase 6B is a pure local calculation layer.
+
+## Phase 6C — deterministic progression classification
+
+- Added a pure classifier over the reviewed `DerivedWorkoutFacts` contract. It copies and chronologically sorts facts by completion timestamp plus stable session ties, so reordered inputs produce the same latest-session comparison without mutation. When the same exercise occurs more than once in one workout, classification counts that workout once and deterministically selects the stable later `sessionExerciseId` occurrence.
+- Applied the approved six-status precedence exactly: insufficient data, ready to increase load, adapting to a new load, regressing, progressing, then stalled. Readiness uses only the first `targetSets` planned sets; extra completed sets cannot satisfy or defeat the readiness rule.
+- Readiness requires the complete planned-set count, a uniform working load, and every planned set at or above the latest historical target maximum. Adaptation requires an increased comparable numeric load with every recorded planned set at or above the latest target minimum.
+- Regression distinguishes the two approved machine-readable reasons: same/lower working load with both planned reps and estimated 1RM declining, or an increased load with a below-minimum planned set and no estimated-1RM improvement.
+- Progress records the specific objective improvements that remain after higher-precedence rules: working load, planned reps at a comparable load, planned volume, and estimated 1RM. No qualifying improvement falls through to stalled.
+- Every result includes copied previous/latest metric snapshots, exact deltas, target/set completeness and uniformity predicates, load comparability, regression reasons, improvement reasons, exact source session/session-exercise IDs, and a concise deterministic explanation. The classifier does not consume profile/notes/AI data, persist derived state, or connect the UI.
+
+## Phase 6C verification — 2026-08-09
+
+- Test-first development observed the missing-module boundary and then 11 expected behavior failures against the explicit unimplemented classifier before the implementation was added. A second red/green cycle required current and previous metric snapshots in the evidence contract.
+- The focused suite passed 17 tests covering all six statuses, precedence overlap, objective evidence/explanations, mixed/missing/extra sets, latest historical target changes, distinct completed-session counting, empty/single-session evidence, lower-load regression, unchanged/improved estimated 1RM at a new load, incomplete new-load adaptation, bodyweight/null-load behavior, and reordered-input determinism.
+- Fresh full local gate under Node v24.18.0 and pnpm 11.20.0: `pnpm test` passed 33 files and 254 tests with the existing 3 opt-in files / 8 tests skipped; `pnpm typecheck`, `pnpm lint`, and the webpack `pnpm build` passed.
+- The initial independent review found two Important gaps: duplicate exercise occurrences could be miscounted as separate completed sessions, and realistic branch mutations were not fully pinned. Failing regressions drove deterministic distinct-session selection plus the expanded boundary suite; the re-review confirmed both Important findings and its non-comparable-explanation Minor resolved, with no new Critical or Important issue.
+- The final bounded precedence/mutation review checked readiness before adaptation/progress, completeness and uniform-load guards, adaptation before progress, regression before objective improvements, both same/lower-load arms, the conjunctive decline rule, unchanged/improved estimated 1RM at a new load, incomplete adaptation, bodyweight/null transitions, stalled fallback, distinct-session counting, and copied chronological sorting.
+- No schema/migration, hosted database mutation, browser fixture, production deployment, or live application verification was needed because Phase 6C is a pure local calculation layer.
+
+## Next handoff after Phase 6C
+
+1. Begin only Phase 6D — exhaustive fixtures and boundary tests — against the reviewed facts, personal-record, and classification contracts.
+2. Expand boundary coverage without changing the approved status rules unless a failing fixture demonstrates a real contract defect; keep UI/server integration owned by Phase 7.
+3. Preserve the closed Phase 3–5 hosted/browser evidence. Phase 6D should remain pure and local unless it exposes a material boundary defect.
+
+## Phase 6D — exhaustive progression fixtures and boundaries
+
+- Added a cross-layer fixture suite that exercises normalized facts, personal records, and progression classification together without adding a server, database, profile, notes, AI, or UI dependency.
+- The precedence matrix pins readiness over simultaneously populated regression evidence and adaptation/progress, adaptation over objective improvements, regression over load improvement, objective progress when the conjunctive regression rule is not met, and the stalled fallback.
+- Exact boundary fixtures cover target maximum readiness, target minimum adaptation, mixed and missing planned sets, same-load regression requiring both planned-rep and estimated-1RM decline, and lower-load sessions that do not qualify as comparable rep progress.
+- Extra-set coverage proves an added completed set changes full-session volume and can establish only a session-volume PR while leaving planned-set metrics, readiness predicates, and progression improvements unchanged.
+- Equal-value PR fixtures prevent duplicate achievements, and same-timestamp sessions use stable snapshot identity ordering. Corrected history is recalculated independently across facts, current records, and classification without retaining stale output.
+- A deterministic property-style fixture checks every ordering of three sessions, reversed nested set inputs, identical facts/records/classification output, and deep input immutability.
+- Phase 6D exposed no production contract defect, so no progression implementation or type changed during this subphase.
+
+## Phase 6D verification — 2026-08-09
+
+- The new fixture suite passed 17 tests; the focused four-file progression gate passed 53 tests.
+- Deliberate mutation review proved the suite fails if readiness loses precedence over populated regression evidence, omits its uniform-working-load guard, same/lower-load regression changes its required conjunction to a disjunction, equal reps-at-load values create duplicate PRs, or an extra completed set leaks into planned work. Each mutation was reverted before the final gate.
+- Fresh full local gate under Node v24.18.0 and pnpm 11.20.0: `pnpm test` passed 34 files and 271 tests with the existing 3 opt-in files / 8 tests skipped; `pnpm typecheck`, `pnpm lint`, and the webpack `pnpm build` passed.
+- No schema/migration, hosted database mutation, browser fixture, production deployment, or live application verification was needed because Phase 6D changes only pure local test coverage.
+
+## Next handoff after Phase 6D
+
+1. Phase 6 is complete. Begin Phase 7 — Connect Progression UI — from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
+2. Replace mock progression, PR, and chart inputs with authenticated user-owned history adapters while preserving the approved screen design and the reviewed Phase 6 facts/records/classification contracts.
+3. Phase 7 changes server/UI boundaries, so rerun focused ownership tests and actual desktop/mobile browser verification in addition to the local code gate. Preserve the closed Phase 3–5 hosted evidence unless those paths materially change.

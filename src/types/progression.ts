@@ -118,6 +118,47 @@ export interface DerivedWorkoutFacts {
   recentDirection: WorkoutMetricChanges | null;
 }
 
+export type ProgressionImprovement =
+  | 'WORKING_LOAD'
+  | 'PLANNED_REPS_AT_COMPARABLE_LOAD'
+  | 'PLANNED_VOLUME'
+  | 'ESTIMATED_1RM';
+
+export type ProgressionRegressionReason =
+  | 'SAME_OR_LOWER_LOAD_REPS_AND_ESTIMATED_1RM_DECLINED'
+  | 'NEW_LOAD_BELOW_MINIMUM_WITHOUT_ESTIMATED_1RM_IMPROVEMENT';
+
+export interface ProgressionEvidence {
+  sessionCount: number;
+  previousSessionId: string | null;
+  previousSessionExerciseId: string | null;
+  latestSessionId: string | null;
+  latestSessionExerciseId: string | null;
+  targetSets: number | null;
+  targetRepMin: number | null;
+  targetRepMax: number | null;
+  completedPlannedSetCount: number;
+  previousWorkingLoadKg: number | null;
+  latestWorkingLoadKg: number | null;
+  previousMetrics: WorkoutFactMetrics | null;
+  latestMetrics: WorkoutFactMetrics | null;
+  changes: WorkoutMetricChanges | null;
+  plannedSetRequirementMet: boolean;
+  allPlannedSetsAtWorkingLoad: boolean;
+  allPlannedSetsMeetTargetMinimum: boolean;
+  allPlannedSetsMeetTargetMaximum: boolean;
+  workingLoadIncreased: boolean;
+  comparableWorkingLoad: boolean;
+  regressionReasons: ProgressionRegressionReason[];
+  improvements: ProgressionImprovement[];
+}
+
+export interface DerivedProgressionAnalysis {
+  status: ProgressionStatus;
+  evidence: ProgressionEvidence;
+  explanation: string;
+}
+
 interface PersonalRecordAchievementBase {
   exerciseId: string;
   exerciseName: string;
