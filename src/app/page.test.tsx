@@ -5,7 +5,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CompletedWorkoutHistoryPage, Exercise, ExerciseHistory, SplitDay } from '@/types';
 
-const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays, getActiveWorkout, getCompletedSessionHistory, getExerciseHistory, getBodyweightSummary, startWorkout } = vi.hoisted(() => ({
+const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays, getActiveWorkout, getCompletedSessionHistory, getExerciseHistory, getExerciseIdsWithHistory, getBodyweightSummary, startWorkout } = vi.hoisted(() => ({
   addSplitExercise: vi.fn(),
   createSplitDay: vi.fn(),
   getSession: vi.fn(),
@@ -14,6 +14,7 @@ const { addSplitExercise, createSplitDay, getSession, getExercises, getSplitDays
   getActiveWorkout: vi.fn(),
   getCompletedSessionHistory: vi.fn(),
   getExerciseHistory: vi.fn(),
+  getExerciseIdsWithHistory: vi.fn(),
   getBodyweightSummary: vi.fn(),
   startWorkout: vi.fn(),
 }));
@@ -28,7 +29,7 @@ vi.mock('@/lib/auth', () => ({ auth: { api: { getSession } } }));
 vi.mock('@/server/queries/exercises', () => ({ getExercises }));
 vi.mock('@/server/queries/splits', () => ({ getSplitDays }));
 vi.mock('@/server/queries/workouts', () => ({ getActiveWorkout }));
-vi.mock('@/server/queries/history', () => ({ getCompletedSessionHistory, getExerciseHistory }));
+vi.mock('@/server/queries/history', () => ({ getCompletedSessionHistory, getExerciseHistory, getExerciseIdsWithHistory }));
 vi.mock('@/server/queries/bodyweight', () => ({ getBodyweightSummary }));
 vi.mock('@/actions/history', () => ({
   getCompletedWorkoutHistory: vi.fn(),
@@ -48,6 +49,25 @@ vi.mock('@/actions/split', () => ({
   updateSplitExercise: vi.fn(),
 }));
 vi.mock('@/actions/analytics', () => ({ getAnalyticsOverview: vi.fn() }));
+vi.mock('@/db/client', () => ({
+  getDb: () => ({
+    query: {
+      trainingProfiles: { findFirst: vi.fn().mockResolvedValue(null) },
+      workoutSessions: { findFirst: vi.fn().mockResolvedValue(null) },
+    },
+  }),
+}));
+vi.mock('@/server/queries/home', () => ({
+  getHomeDashboardData: vi.fn().mockResolvedValue({
+    metrics: { hasSchedule: true, currentStreak: 0, bestStreak: 0, workoutsThisWeek: 0, consistencyScore: 0, streakStatus: 'cold' },
+    heatmap: [],
+    analytics: { progressingCount: 0, readyCount: 0, stalledCount: 0, recentPRsCount: 0 },
+    progressionSnapshot: { readyCount: 0, stalledCount: 0 },
+    recentActivity: null,
+    nextScheduledWorkout: null,
+    aiInsight: null,
+  }),
+}));
 
 import Home from './page';
 
@@ -117,6 +137,7 @@ afterEach(() => {
 beforeEach(() => {
   getActiveWorkout.mockResolvedValue(null);
   getCompletedSessionHistory.mockResolvedValue({ sessions: [], nextCursor: null });
+  getExerciseIdsWithHistory.mockResolvedValue([]);
   getBodyweightSummary.mockResolvedValue({ currentWeight: null, startWeight: null, startDate: null, netChange: null, trend: null, logs: [] });
   getExerciseHistory.mockImplementation(async (_userId: string, exerciseId: string) => ({
     exercise: persistentExercises.find(({ id }) => id === exerciseId) ?? persistentExercises[0],
@@ -128,11 +149,13 @@ describe('protected application hydration', () => {
   it('starts independent exercise, split, active-workout, and completed-history reads in parallel before loading first-exercise history', async () => {
     const exerciseRequest = deferred<Exercise[]>();
     const splitRequest = deferred<SplitDay[]>();
+    const exerciseIdsRequest = deferred<string[]>();
     getSession.mockResolvedValue({
       user: { id: 'trusted-user', name: 'Trusted User', email: 'trusted@example.test' },
     });
     getExercises.mockReturnValue(exerciseRequest.promise);
     getSplitDays.mockReturnValue(splitRequest.promise);
+    getExerciseIdsWithHistory.mockReturnValue(exerciseIdsRequest.promise);
 
     const homeRequest = Home();
     await vi.waitFor(() => {
@@ -140,12 +163,14 @@ describe('protected application hydration', () => {
       expect(getSplitDays).toHaveBeenCalledWith('trusted-user');
       expect(getActiveWorkout).toHaveBeenCalledWith('trusted-user');
       expect(getCompletedSessionHistory).toHaveBeenCalledWith('trusted-user', { pageSize: 20 });
+      expect(getExerciseIdsWithHistory).toHaveBeenCalledWith('trusted-user');
     });
     expect(getExerciseHistory).not.toHaveBeenCalled();
 
     exerciseRequest.resolve(persistentExercises);
-    await vi.waitFor(() => expect(getExerciseHistory).toHaveBeenCalledWith('trusted-user', persistentExercises[0].id));
     splitRequest.resolve(persistentSplit);
+    exerciseIdsRequest.resolve([]);
+    await vi.waitFor(() => expect(getExerciseHistory).toHaveBeenCalledWith('trusted-user', persistentExercises[0].id));
     await homeRequest;
   });
 

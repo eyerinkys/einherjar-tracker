@@ -217,5 +217,67 @@ describe('factual per-exercise history', () => {
     expect(screen.getByText('INSUFFICIENT DATA')).toBeTruthy();
     expect(screen.getByText('At least two completed sessions are required; found 1.')).toBeTruthy();
   });
+
+  it('restricts selectable dropdown options to exercises configured in split or having user data', () => {
+    const splitDays = [
+      {
+        id: id('sd1'),
+        name: 'Day A',
+        order: 1,
+        exercises: [
+          {
+            id: id('se1'),
+            exerciseId: exercises[1].id, // Push-up is in split
+            exerciseName: exercises[1].name,
+            muscleGroup: exercises[1].muscleGroup,
+            targetSets: 3,
+            targetRepMin: 8,
+            targetRepMax: 12,
+            order: 1,
+          },
+        ],
+      },
+    ];
+    const exerciseIdsWithData = [exercises[2].id]; // Split Squat has user data
+
+    render(
+      <ExerciseDetailView
+        exercises={exercises}
+        initialExerciseHistory={null}
+        splitDays={splitDays}
+        exerciseIdsWithData={exerciseIdsWithData}
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox') as HTMLSelectElement;
+    const options = Array.from(combobox.options).map((opt) => opt.value);
+
+    // Push-up (in split) and Split Squat (has data) should be present
+    expect(options).toContain(exercises[1].id);
+    expect(options).toContain(exercises[2].id);
+
+    // Ring Row (neither in split nor has data) should NOT be present
+    expect(options).not.toContain(exercises[0].id);
+  });
+
+  it('shows all exercises in dropdown when no split is configured and no data exists', () => {
+    render(
+      <ExerciseDetailView
+        exercises={exercises}
+        initialExerciseHistory={null}
+        splitDays={[]}
+        exerciseIdsWithData={[]}
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox') as HTMLSelectElement;
+    const options = Array.from(combobox.options).map((opt) => opt.value);
+
+    // All exercises should be present as fallback
+    expect(options).toHaveLength(3);
+    expect(options).toContain(exercises[0].id);
+    expect(options).toContain(exercises[1].id);
+    expect(options).toContain(exercises[2].id);
+  });
 });
 

@@ -23,6 +23,7 @@ interface ApplicationShellProps {
   initialBodyweightSummary?: BodyweightSummaryDTO;
   initialPhotos?: ProgressPhoto[];
   initialHomeDashboardData: HomeDashboardDTO;
+  exerciseIdsWithData?: string[];
   user: {
     id: string;
     name: string;
@@ -30,7 +31,7 @@ interface ApplicationShellProps {
   };
 }
 
-export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, initialHistoryPage, initialExerciseHistory, initialBodyweightSummary, initialPhotos, initialHomeDashboardData, user }: ApplicationShellProps) {
+export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, initialHistoryPage, initialExerciseHistory, initialBodyweightSummary, initialPhotos, initialHomeDashboardData, exerciseIdsWithData, user }: ApplicationShellProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [splitPending, setSplitPending] = useState(false);
   const [workoutPending, setWorkoutPending] = useState(false);
@@ -115,7 +116,12 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
               </div>
 
               {progressSubTab === 'exercise' ? (
-                <ExerciseDetailView exercises={exercises} initialExerciseHistory={initialExerciseHistory} />
+                <ExerciseDetailView
+                  exercises={exercises}
+                  initialExerciseHistory={initialExerciseHistory}
+                  splitDays={splitDays}
+                  exerciseIdsWithData={exerciseIdsWithData}
+                />
               ) : (
                 <AnalyticsView />
               )}

@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth';
 import { getExercises } from '@/server/queries/exercises';
 import { getSplitDays } from '@/server/queries/splits';
 import { getActiveWorkout } from '@/server/queries/workouts';
-import { getCompletedSessionHistory, getExerciseHistory } from '@/server/queries/history';
+import { getCompletedSessionHistory, getExerciseHistory, getExerciseIdsWithHistory } from '@/server/queries/history';
 import { getBodyweightSummary } from '@/server/queries/bodyweight';
 import { getPhotos } from '@/actions/photos';
 import { getHomeDashboardData } from '@/server/queries/home';
@@ -26,23 +26,41 @@ export default async function Home() {
 
   const userId = session.user.id;
   const exercisesRequest = getExercises(userId);
-  const firstExerciseHistoryRequest = exercisesRequest.then((visibleExercises) => (
-    visibleExercises[0] ? getExerciseHistory(userId, visibleExercises[0].id) : null
-  ));
+  const splitDaysRequest = getSplitDays(userId);
+  const exerciseIdsWithDataRequest = getExerciseIdsWithHistory(userId);
+
+  const initialExerciseHistoryRequest = Promise.all([
+    exercisesRequest,
+    splitDaysRequest,
+    exerciseIdsWithDataRequest,
+  ]).then(([visibleExercises, visibleSplitDays, loggedIds]) => {
+    if (visibleExercises.length === 0) return null;
+    const splitExerciseIds = new Set(
+      visibleSplitDays.flatMap((day) => day.exercises.map((ex) => ex.exerciseId))
+    );
+    const loggedSet = new Set(loggedIds);
+    const selectable = visibleExercises.filter(
+      (ex) => loggedSet.has(ex.id) || splitExerciseIds.has(ex.id)
+    );
+    const targetExercise = selectable[0] ?? visibleExercises[0];
+    return targetExercise ? getExerciseHistory(userId, targetExercise.id) : null;
+  });
+
   const db = getDb();
   const profileRequest = db.query.trainingProfiles.findFirst({
     where: eq(trainingProfiles.userId, userId),
   });
 
-  const [exercises, splitDays, activeWorkout, historyPage, exerciseHistory, bodyweightSummary, photosRes, profile] = await Promise.all([
+  const [exercises, splitDays, activeWorkout, historyPage, exerciseHistory, bodyweightSummary, photosRes, profile, exerciseIdsWithData] = await Promise.all([
     exercisesRequest,
-    getSplitDays(userId),
+    splitDaysRequest,
     getActiveWorkout(userId),
     getCompletedSessionHistory(userId, { pageSize: 20 }),
-    firstExerciseHistoryRequest,
+    initialExerciseHistoryRequest,
     getBodyweightSummary(userId),
     getPhotos(),
     profileRequest,
+    exerciseIdsWithDataRequest,
   ]);
 
   const timezone = profile?.ianaTimezone || 'UTC';
@@ -58,6 +76,7 @@ export default async function Home() {
       initialBodyweightSummary={bodyweightSummary}
       initialPhotos={photosRes.ok ? photosRes.data : []}
       initialHomeDashboardData={homeDashboardData}
+      exerciseIdsWithData={exerciseIdsWithData}
       user={{
         id: session.user.id,
         name: session.user.name,

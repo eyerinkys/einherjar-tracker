@@ -10,6 +10,7 @@ import {
   getCompletedSession,
   getCompletedSessionHistory,
   getExerciseHistory,
+  getExerciseIdsWithHistory,
   getPreviousPerformanceByExercise,
   getPreviousPerformanceRowsByExercise,
   mapCompletedSession,
@@ -64,6 +65,7 @@ function adapter(overrides: Partial<HistoryReadAdapter> = {}): HistoryReadAdapte
     findVisibleExercise: async () => null,
     listExerciseHistory: async () => [],
     listPreviousPerformance: async () => [],
+    listExerciseIdsWithHistory: async () => [],
     ...overrides,
   };
 }
@@ -304,5 +306,18 @@ describe('previous performance selection', () => {
     expect(query.params).toEqual([
       'trusted', 'completed', id('999'), '2026-08-09T04:00:00.000Z', true, exerciseId,
     ]);
+  });
+
+  it('delegates getExerciseIdsWithHistory to the history read adapter', async () => {
+    const expected = [id('100'), id('101')];
+    const read = adapter({
+      listExerciseIdsWithHistory: async (userId) => {
+        expect(userId).toBe('trusted');
+        return expected;
+      },
+    });
+
+    const result = await getExerciseIdsWithHistory('trusted', read);
+    expect(result).toEqual(expected);
   });
 });

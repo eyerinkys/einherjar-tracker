@@ -5,7 +5,7 @@ import { getExerciseWorkoutHistory } from '@/actions/history';
 import { deriveWorkoutFacts } from '@/lib/progression/facts';
 import { derivePersonalRecords } from '@/lib/progression/records';
 import { classifyProgression } from '@/lib/progression/classification';
-import type { Exercise, ExerciseHistory } from '@/types';
+import type { Exercise, ExerciseHistory, SplitDay } from '@/types';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { RuneBadge } from '@/components/ui/RuneBadge';
 import { InsightEye } from '@/components/ui/InsightEye';
@@ -24,6 +24,8 @@ import {
 interface ExerciseDetailViewProps {
   exercises: Exercise[];
   initialExerciseHistory: ExerciseHistory | null;
+  splitDays?: SplitDay[];
+  exerciseIdsWithData?: string[];
 }
 
 const localDateFormatter = new Intl.DateTimeFormat('en-GB', {
@@ -38,14 +40,44 @@ function formatLoad(weight: number | null, reps: number): string {
   return `${weight === null ? 'Bodyweight' : `${numberFormatter.format(weight)}kg`} × ${reps}`;
 }
 
-export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercises, initialExerciseHistory }) => {
+export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({
+  exercises,
+  initialExerciseHistory,
+  splitDays,
+  exerciseIdsWithData,
+}) => {
+  const selectableExercises = useMemo(() => {
+    if (splitDays === undefined && exerciseIdsWithData === undefined) {
+      return exercises;
+    }
+    const dataSet = new Set(exerciseIdsWithData ?? []);
+    const splitSet = new Set<string>();
+    if (splitDays) {
+      for (const day of splitDays) {
+        for (const ex of day.exercises) {
+          if (ex.exerciseId) splitSet.add(ex.exerciseId);
+        }
+      }
+    }
+    const filtered = exercises.filter(
+      (ex) => dataSet.has(ex.id) || splitSet.has(ex.id),
+    );
+    return filtered.length > 0 ? filtered : exercises;
+  }, [exercises, splitDays, exerciseIdsWithData]);
+
+  const defaultExerciseId = initialExerciseHistory?.exercise.id ?? selectableExercises[0]?.id ?? exercises[0]?.id ?? '';
+
   const [selectionState, setSelectionState] = useState(() => ({
     source: initialExerciseHistory,
-    value: exercises[0]?.id ?? '',
+    value: defaultExerciseId,
   }));
-  const selectedExerciseId = selectionState.source === initialExerciseHistory
+  const activeSelectedId = selectionState.source === initialExerciseHistory
     ? selectionState.value
-    : (initialExerciseHistory?.exercise.id ?? exercises[0]?.id ?? '');
+    : (initialExerciseHistory?.exercise.id ?? defaultExerciseId);
+  const selectedExerciseId = selectableExercises.some((e) => e.id === activeSelectedId)
+    ? activeSelectedId
+    : (selectableExercises[0]?.id ?? exercises[0]?.id ?? '');
+
   const [historyState, setHistoryState] = useState(() => ({
     source: initialExerciseHistory,
     value: initialExerciseHistory,
@@ -56,10 +88,10 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
   const [historyRequest, setHistoryRequest] = useState<{
     exerciseId: string;
     status: 'idle' | 'loading' | 'error' | 'settled';
-  }>({ exerciseId: exercises[0]?.id ?? '', status: 'idle' });
+  }>({ exerciseId: selectedExerciseId, status: 'idle' });
   const requestId = useRef(0);
 
-  const currentExercise = exercises.find((e) => e.id === selectedExerciseId) || exercises[0];
+  const currentExercise = selectableExercises.find((e) => e.id === selectedExerciseId) || selectableExercises[0] || exercises[0];
   const displayedHistory = settledHistory?.exercise.id === currentExercise?.id
     ? settledHistory
     : null;
@@ -121,7 +153,7 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
             onChange={(event) => selectExercise(event.target.value)}
             className="min-h-11 w-full min-w-0 max-w-full rounded-xs border border-[#677D6A] bg-[#222831] px-3 font-mono text-base font-bold text-[#DFD0B8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8DAA91] sm:w-auto"
           >
-            {exercises.map((ex) => (
+            {selectableExercises.map((ex) => (
               <option key={ex.id} value={ex.id}>
                 {ex.name}
               </option>

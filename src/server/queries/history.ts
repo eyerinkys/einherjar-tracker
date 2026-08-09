@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, desc, eq, inArray, lt, ne, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, lt, ne, or, type SQL } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { exercises, sessionExercises, workoutSessions, workoutSets } from '../../db/schema';
 import type {
@@ -91,6 +91,7 @@ export interface HistoryReadAdapter {
     activeStartedAt: Date,
     exerciseIds: readonly string[],
   ): Promise<PreviousPerformanceRow[]>;
+  listExerciseIdsWithHistory(userId: string): Promise<string[]>;
 }
 
 export function completedSessionsWhere(userId: string, cursor?: HistoryCursor): SQL {
@@ -297,6 +298,13 @@ export async function getExerciseHistory(
   return { exercise: mapExercise(exercise), sessions: mapExerciseHistoryRows(rows) };
 }
 
+export async function getExerciseIdsWithHistory(
+  userId: string,
+  adapter: HistoryReadAdapter = createDrizzleHistoryReadAdapter(),
+): Promise<string[]> {
+  return adapter.listExerciseIdsWithHistory(userId);
+}
+
 export async function getPreviousPerformanceRowsByExercise(
   userId: string,
   activeSessionId: string,
@@ -496,6 +504,21 @@ export function createDrizzleHistoryReadAdapter(database: QueryExecutor = getDb(
           desc(sessionExercises.id), asc(workoutSets.setNumber), asc(workoutSets.id),
         );
       return rows.filter((row): row is PreviousPerformanceRow => row.completedAt !== null);
+    },
+
+    async listExerciseIdsWithHistory(userId) {
+      const rows = await database.selectDistinct({
+        exerciseId: sessionExercises.exerciseId,
+      }).from(sessionExercises)
+        .innerJoin(workoutSessions, eq(workoutSessions.id, sessionExercises.workoutSessionId))
+        .innerJoin(workoutSets, eq(workoutSets.sessionExerciseId, sessionExercises.id))
+        .where(and(
+          eq(workoutSessions.userId, userId),
+          eq(workoutSessions.status, 'completed'),
+          eq(workoutSets.isCompleted, true),
+          isNotNull(sessionExercises.exerciseId),
+        ));
+      return rows.map((r) => r.exerciseId).filter((id): id is string => id !== null);
     },
   };
 }
