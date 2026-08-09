@@ -380,9 +380,32 @@
 - Build: Webpack production build (`next build --webpack`) completed successfully with all static/dynamic routes prerendered.
 - Diff check: `git diff --check` passed with 0 warnings.
 
-## Next handoff after Phase 9
+## Phase 10 — Bodyweight
 
-1. Phase 9 is complete. Begin Phase 10 — Bodyweight — from `docs/superpowers/plans/grand_plan.md`.
-2. Add `bodyweight_logs` table schema and migration, same-day upsert queries/actions, ordered bodyweight history, net change/trend calculations, and connect `BodyweightView`.
+- Added `bodyweight_logs` Drizzle schema table (`id`, `userId`, `date`, `weightKg`, `notes`, timestamps) with a `(user_id, date)` unique constraint for same-day upsert and check constraints matching 20–500 kg bounds and `YYYY-MM-DD` date format.
+- Generated and committed SQL migration `drizzle/0002_lowly_secret_warriors.sql`. Migration was applied successfully to the hosted Neon database using mode-600 `.env` credentials as authorized.
+- Added `BodyweightEntry` and `BodyweightSummaryDTO` interfaces, plus `logBodyweightSchema` and `deleteBodyweightSchema` Zod validation (validating IDs as strict UUIDs).
+- Added `getBodyweightLogs(userId)` and `getBodyweightSummary(userId)` server queries calculating current weight, start weight, net change (`round1dp`), and 4-entry trend.
+- Added `logBodyweight`, `deleteBodyweightEntry`, and `getBodyweightSummaryAction` Server Actions with strict `requireUser()` session authorization, same-day upsert (`ON CONFLICT (user_id, date) DO UPDATE`), and safe error handling.
+- Hydrated `BodyweightView` from `page.tsx` via `ApplicationShell` using parallel server component queries.
+- Connected `BodyweightView` to live Server Actions for adding/updating weight and deleting entries, with error feedback and retry capability, while preserving the existing Norse UI design.
+- Removed obsolete `getBodyweightLogs` and `MOCK_BODYWEIGHT_LOGS` from `dataService.ts`.
+
+## Phase 10 verification — 2026-08-09
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Hosted Database Migration: `drizzle/0002_lowly_secret_warriors.sql` applied successfully to hosted Neon database target.
+- Database Check: `pnpm db:check` passed pooled transactions, direct migration transactions, and database schema integrity.
+- Drizzle Kit Check: `drizzle-kit check` passed (`Everything's fine 🐶🔥`).
+- Unit & Component Suite: `pnpm test` passed 49 files and 329 tests with 3 opt-in database files / 8 tests skipped.
+- Typecheck & Lint: `pnpm typecheck` and `pnpm lint` passed with 0 errors and 0 warnings.
+- Build: Webpack production build (`next build --webpack`) completed successfully with static/dynamic routes prerendered.
+- Diff check: `git diff --check` passed with 0 warnings.
+
+## Next handoff after Phase 10
+
+1. Phase 10 is complete. Begin Phase 11 — Cloudflare R2 + Progress Photos — from `docs/superpowers/plans/grand_plan.md`.
+2. Add `progress_photos` table schema and migration, private R2 presigned PUT/GET handlers, client-side WebP compression, confirmation action, tag/gallery/comparison views, and photo deletion.
+
 
 
