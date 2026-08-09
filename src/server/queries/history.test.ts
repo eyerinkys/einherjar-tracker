@@ -11,6 +11,7 @@ import {
   getCompletedSessionHistory,
   getExerciseHistory,
   getPreviousPerformanceByExercise,
+  getPreviousPerformanceRowsByExercise,
   mapCompletedSession,
   previousPerformanceWhere,
   type CompletedSessionChildRow,
@@ -236,6 +237,23 @@ describe('previous performance selection', () => {
       { weight: 85, reps: 7 },
       { weight: 85, reps: 6 },
     ]]]));
+  });
+
+  it('preserves exact numeric text until the frontend DTO boundary', async () => {
+    const exactWeight = '82.500000000000000001';
+    const read = adapter({
+      listPreviousPerformance: async () => [candidate({ weight: exactWeight })],
+    });
+
+    const selected = await getPreviousPerformanceRowsByExercise(
+      'trusted', id('999'), activeStartedAt, [exerciseId], read,
+    );
+    expect(selected.get(exerciseId)?.[0].weight).toBe(exactWeight);
+
+    const dto = await getPreviousPerformanceByExercise(
+      'trusted', id('999'), activeStartedAt, [exerciseId], read,
+    );
+    expect(dto.get(exerciseId)).toEqual([{ weight: 82.5, reps: 8 }]);
   });
 
   it('binds every exclusion and requested exercise to the database predicate', () => {

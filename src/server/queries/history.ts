@@ -74,6 +74,12 @@ export interface PreviousPerformanceRow {
   isCompleted: boolean;
 }
 
+export type SelectedPreviousPerformanceRow = PreviousPerformanceRow & {
+  exerciseId: string;
+  weight: string;
+  reps: number;
+};
+
 export interface HistoryReadAdapter {
   listCompletedSessions(userId: string, cursor: HistoryCursor | undefined, limit: number): Promise<CompletedSessionRow[]>;
   listCompletedSessionChildren(userId: string, sessionIds: readonly string[]): Promise<CompletedSessionChildRow[]>;
@@ -292,20 +298,20 @@ export async function getExerciseHistory(
   return { exercise: mapExercise(exercise), sessions: mapExerciseHistoryRows(rows) };
 }
 
-export async function getPreviousPerformanceByExercise(
+export async function getPreviousPerformanceRowsByExercise(
   userId: string,
   activeSessionId: string,
   activeStartedAt: Date,
   exerciseIds: readonly string[],
   adapter: HistoryReadAdapter = createDrizzleHistoryReadAdapter(),
-): Promise<Map<string, PreviousPerformanceSet[]>> {
+): Promise<Map<string, SelectedPreviousPerformanceRow[]>> {
   if (exerciseIds.length === 0) return new Map();
   const requested = new Set(exerciseIds);
   const rows = await adapter.listPreviousPerformance(
     userId, activeSessionId, activeStartedAt, exerciseIds,
   );
   const eligible = rows
-    .filter((row) =>
+    .filter((row): row is SelectedPreviousPerformanceRow =>
       row.userId === userId
       && row.status === 'completed'
       && row.workoutSessionId !== activeSessionId
@@ -324,17 +330,33 @@ export async function getPreviousPerformanceByExercise(
       || compareTextAscending(left.setId, right.setId));
 
   const chosenExercise = new Map<string, string>();
-  const result = new Map<string, PreviousPerformanceSet[]>();
+  const result = new Map<string, SelectedPreviousPerformanceRow[]>();
   for (const row of eligible) {
-    const exerciseId = row.exerciseId!;
+    const exerciseId = row.exerciseId;
     const selected = chosenExercise.get(exerciseId);
     if (selected !== undefined && selected !== row.sessionExerciseId) continue;
     chosenExercise.set(exerciseId, row.sessionExerciseId);
     const sets = result.get(exerciseId) ?? [];
-    sets.push({ weight: Number(row.weight), reps: row.reps! });
+    sets.push(row);
     result.set(exerciseId, sets);
   }
   return result;
+}
+
+export async function getPreviousPerformanceByExercise(
+  userId: string,
+  activeSessionId: string,
+  activeStartedAt: Date,
+  exerciseIds: readonly string[],
+  adapter: HistoryReadAdapter = createDrizzleHistoryReadAdapter(),
+): Promise<Map<string, PreviousPerformanceSet[]>> {
+  const selected = await getPreviousPerformanceRowsByExercise(
+    userId, activeSessionId, activeStartedAt, exerciseIds, adapter,
+  );
+  return new Map([...selected].map(([exerciseId, rows]) => [
+    exerciseId,
+    rows.map((row) => ({ weight: Number(row.weight), reps: row.reps })),
+  ]));
 }
 
 type Database = ReturnType<typeof getDb>;

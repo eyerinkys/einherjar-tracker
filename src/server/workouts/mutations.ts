@@ -13,7 +13,7 @@ import {
 } from '../../db/schema';
 import type { ActiveWorkout } from '../../types';
 import { AuthorizationError, requireOwnedRecord, ownedWhere } from '../auth/ownership';
-import { createDrizzleHistoryReadAdapter, getPreviousPerformanceByExercise } from '../queries/history';
+import { createDrizzleHistoryReadAdapter, getPreviousPerformanceRowsByExercise } from '../queries/history';
 import { getActiveWorkout } from '../queries/workouts';
 import type {
   CompleteWorkoutInput,
@@ -118,7 +118,7 @@ export async function startWorkoutForUser(
       sourceSplitDayId: ownedDay.id,
       splitDayName: ownedDay.name,
     }).returning({ id: workoutSessions.id, startedAt: workoutSessions.startedAt });
-    const previous = await getPreviousPerformanceByExercise(
+    const previous = await getPreviousPerformanceRowsByExercise(
       userId,
       createdSession.id,
       createdSession.startedAt,
@@ -143,7 +143,7 @@ export async function startWorkoutForUser(
         return {
           sessionExerciseId: createdExercise.id,
           setNumber: index + 1,
-          weight: prior === undefined ? null : String(prior.weight),
+          weight: prior?.weight ?? null,
           reps: prior?.reps ?? source.targetRepMin,
           isCompleted: false,
         };
