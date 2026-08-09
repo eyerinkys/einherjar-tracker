@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ActiveWorkout, SplitDay, CompletedSession, Exercise } from '@/types';
-import { getWorkoutHistory } from '@/services/dataService';
+import type { ActiveWorkout, CompletedWorkoutHistoryPage, Exercise, ExerciseHistory, SplitDay } from '@/types';
 import { Header } from '@/components/layout/Header';
 import { Navigation, NavTab } from '@/components/layout/Navigation';
 import { SplitView } from '@/components/screens/SplitView';
@@ -17,6 +16,8 @@ interface ApplicationShellProps {
   exercises: Exercise[];
   initialSplitDays: SplitDay[];
   initialActiveWorkout: ActiveWorkout | null;
+  initialHistoryPage: CompletedWorkoutHistoryPage;
+  initialExerciseHistory: ExerciseHistory | null;
   user: {
     id: string;
     name: string;
@@ -24,7 +25,7 @@ interface ApplicationShellProps {
   };
 }
 
-export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, user }: ApplicationShellProps) {
+export function ApplicationShell({ exercises, initialSplitDays, initialActiveWorkout, initialHistoryPage, initialExerciseHistory, user }: ApplicationShellProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('train');
   const [splitPending, setSplitPending] = useState(false);
   const [workoutPending, setWorkoutPending] = useState(false);
@@ -37,8 +38,6 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
   }));
   const splitDays =
     splitState.source === initialSplitDays ? splitState.value : initialSplitDays;
-  const [sessions] = useState<CompletedSession[]>(() => getWorkoutHistory());
-
   const handleUpdateSplitDays = (days: SplitDay[]) => {
     setSplitState({ source: initialSplitDays, value: days });
   };
@@ -64,7 +63,7 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
             <TrainView splitDays={splitDays} activeWorkout={activeWorkout} onWorkoutChange={(value) => setWorkoutState({ source: initialActiveWorkout, value })} onPendingChange={setWorkoutPending} />
           ) : null}
 
-          {activeTab === 'history' ? <HistoryView sessions={sessions} /> : null}
+          {activeTab === 'history' ? <HistoryView initialHistoryPage={initialHistoryPage} /> : null}
 
           {activeTab === 'progress' ? (
             <div className="space-y-6">
@@ -92,7 +91,7 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
               </div>
 
               {progressSubTab === 'exercise' ? (
-                <ExerciseDetailView exercises={exercises} />
+                <ExerciseDetailView exercises={exercises} initialExerciseHistory={initialExerciseHistory} />
               ) : (
                 <AnalyticsView />
               )}

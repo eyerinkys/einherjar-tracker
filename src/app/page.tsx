@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { getExercises } from '@/server/queries/exercises';
 import { getSplitDays } from '@/server/queries/splits';
 import { getActiveWorkout } from '@/server/queries/workouts';
+import { getCompletedSessionHistory, getExerciseHistory } from '@/server/queries/history';
 
 export const runtime = 'nodejs';
 
@@ -17,10 +18,17 @@ export default async function Home() {
     redirect('/sign-in');
   }
 
-  const [exercises, splitDays, activeWorkout] = await Promise.all([
-    getExercises(session.user.id),
-    getSplitDays(session.user.id),
-    getActiveWorkout(session.user.id),
+  const userId = session.user.id;
+  const exercisesRequest = getExercises(userId);
+  const firstExerciseHistoryRequest = exercisesRequest.then((visibleExercises) => (
+    visibleExercises[0] ? getExerciseHistory(userId, visibleExercises[0].id) : null
+  ));
+  const [exercises, splitDays, activeWorkout, historyPage, exerciseHistory] = await Promise.all([
+    exercisesRequest,
+    getSplitDays(userId),
+    getActiveWorkout(userId),
+    getCompletedSessionHistory(userId, { pageSize: 20 }),
+    firstExerciseHistoryRequest,
   ]);
 
   return (
@@ -28,6 +36,8 @@ export default async function Home() {
       exercises={exercises}
       initialSplitDays={splitDays}
       initialActiveWorkout={activeWorkout}
+      initialHistoryPage={historyPage}
+      initialExerciseHistory={exerciseHistory}
       user={{
         id: session.user.id,
         name: session.user.name,

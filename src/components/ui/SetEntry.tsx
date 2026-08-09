@@ -13,6 +13,9 @@ interface SetEntryProps {
 }
 
 export function SetEntry({ set, previousSet, disabled = false, canRemove = true, onRemove, onUpdateSet }: SetEntryProps) {
+  const previousPerformance = previousSet
+    ? `${previousSet.weight === null ? 'Bodyweight' : `${previousSet.weight}kg`} × ${previousSet.reps}`
+    : 'First set';
   const updateWeight = (value: string) => onUpdateSet({ ...set, weight: value === '' ? null : Number(value) });
   const updateReps = (value: string) => onUpdateSet({ ...set, reps: value === '' ? null : Number(value) });
   const adjustWeight = (delta: number) => onUpdateSet({ ...set, weight: Math.max(0, Math.round(((set.weight ?? 0) + delta) * 10) / 10) });
@@ -23,10 +26,10 @@ export function SetEntry({ set, previousSet, disabled = false, canRemove = true,
       <div className="flex min-w-0 items-center gap-1 sm:col-span-2">
         <span className="font-mono text-xs uppercase text-[#948979]">Set</span>
         <span className="font-mono text-sm font-bold text-[#DFD0B8]">{String(set.setNumber).padStart(2, '0')}</span>
-        <span className="truncate font-mono text-xs text-[#948979] sm:hidden">· {previousSet ? `${previousSet.weight}kg × ${previousSet.reps}` : 'First set'}</span>
+        <span className="truncate font-mono text-xs text-[#948979] sm:hidden">· {previousPerformance}</span>
       </div>
       <div className="hidden truncate font-mono text-xs text-[#948979] sm:col-span-2 sm:block">
-        {previousSet ? `${previousSet.weight}kg × ${previousSet.reps}` : 'First set'}
+        {previousPerformance}
       </div>
       <div className="flex min-h-11 min-w-0 items-center rounded-xs border border-[#393E46] bg-[#1C2128] sm:col-span-3">
         <button type="button" disabled={disabled} onClick={() => adjustWeight(-2.5)} aria-label={`Decrease weight for set ${set.setNumber}`} className="h-11 w-9 shrink-0 text-[#948979] hover:text-[#DFD0B8] disabled:opacity-50"><Minus className="mx-auto h-3.5 w-3.5" /></button>

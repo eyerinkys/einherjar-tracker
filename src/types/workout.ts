@@ -7,6 +7,7 @@ export interface WorkoutSet {
 }
 
 export interface PreviousPerformanceSet {
+  setNumber: number;
   weight: number | null;
   reps: number;
 }

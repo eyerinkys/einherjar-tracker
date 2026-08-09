@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { getExerciseWorkoutHistory } from '@/actions/history';
 import {
   getExerciseProgression,
   getAIInsightForExercise,
   getAchievedPRs,
 } from '@/services/dataService';
-import type { Exercise } from '@/types';
+import type { Exercise, ExerciseHistory } from '@/types';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { RuneBadge } from '@/components/ui/RuneBadge';
 import { InsightEye } from '@/components/ui/InsightEye';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Trophy, TrendingUp, Sparkles, History, Calculator, Cpu } from 'lucide-react';
+import { Trophy, TrendingUp, Sparkles, History, Calculator, Cpu, RotateCcw } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -24,6 +25,19 @@ import {
 
 interface ExerciseDetailViewProps {
   exercises: Exercise[];
+  initialExerciseHistory: ExerciseHistory | null;
+}
+
+const localDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
+const numberFormatter = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 3 });
+
+function formatLoad(weight: number | null, reps: number): string {
+  return `${weight === null ? 'Bodyweight' : `${numberFormatter.format(weight)}kg`} × ${reps}`;
 }
 
 const LEGACY_PROGRESS_ID_BY_BUILT_IN_ID: Readonly<Record<string, string>> = {
@@ -38,8 +52,20 @@ const LEGACY_PROGRESS_ID_BY_BUILT_IN_ID: Readonly<Record<string, string>> = {
   '00000000-0000-4000-8000-000000000009': 'ex-9',
 };
 
-export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercises }) => {
+export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercises, initialExerciseHistory }) => {
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>(exercises[0]?.id || '');
+  const [historyState, setHistoryState] = useState(() => ({
+    source: initialExerciseHistory,
+    value: initialExerciseHistory,
+  }));
+  const settledHistory = historyState.source === initialExerciseHistory
+    ? historyState.value
+    : initialExerciseHistory;
+  const [historyRequest, setHistoryRequest] = useState<{
+    exerciseId: string;
+    status: 'idle' | 'loading' | 'error' | 'settled';
+  }>({ exerciseId: exercises[0]?.id ?? '', status: 'idle' });
+  const requestId = useRef(0);
 
   const currentExercise = exercises.find((e) => e.id === selectedExerciseId) || exercises[0];
   const progressExerciseId =
@@ -50,6 +76,33 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
 
   const achievedPRWeight = chartData.length > 0 ? Math.max(...chartData.map((d) => d.weight), 0) : (achievedPRs[0]?.weight || 0);
   const max1RM = chartData.length > 0 ? Math.max(...chartData.map((d) => d.estimated1RM), 0) : (achievedPRs[0]?.estimated1RM || 0);
+  const displayedHistory = settledHistory?.exercise.id === currentExercise?.id
+    ? settledHistory
+    : null;
+
+  const loadExerciseHistory = async (exerciseId: string) => {
+    const currentRequestId = ++requestId.current;
+    setHistoryRequest({ exerciseId, status: 'loading' });
+    try {
+      const result = await getExerciseWorkoutHistory({ exerciseId });
+      if (currentRequestId !== requestId.current) return;
+      if (!result.ok || result.data.exercise.id !== exerciseId) {
+        setHistoryRequest({ exerciseId, status: 'error' });
+        return;
+      }
+      setHistoryState({ source: initialExerciseHistory, value: result.data });
+      setHistoryRequest({ exerciseId, status: 'settled' });
+    } catch {
+      if (currentRequestId === requestId.current) {
+        setHistoryRequest({ exerciseId, status: 'error' });
+      }
+    }
+  };
+
+  const selectExercise = (exerciseId: string) => {
+    setSelectedExerciseId(exerciseId);
+    void loadExerciseHistory(exerciseId);
+  };
 
   return (
     <div className="space-y-6">
@@ -62,8 +115,8 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
           <select
             id="progress-exercise"
             value={currentExercise?.id ?? ''}
-            onChange={(e) => setSelectedExerciseId(e.target.value)}
-            className="w-full min-w-0 max-w-full bg-[#222831] border border-[#677D6A] text-[#DFD0B8] font-mono text-base font-bold px-3 py-1.5 rounded-xs focus:outline-none sm:w-auto"
+            onChange={(event) => selectExercise(event.target.value)}
+            className="min-h-11 w-full min-w-0 max-w-full rounded-xs border border-[#677D6A] bg-[#222831] px-3 font-mono text-base font-bold text-[#DFD0B8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8DAA91] sm:w-auto"
           >
             {exercises.map((ex) => (
               <option key={ex.id} value={ex.id}>
@@ -209,49 +262,6 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
             </RunePanel>
           )}
 
-          {/* Progression History Table */}
-          {chartData.length > 0 && (
-            <RunePanel variant="carved" className="p-4 sm:p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-[#393E46] pb-3">
-                <div className="flex items-center gap-2 font-mono text-xs font-bold text-[#DFD0B8]">
-                  <History className="w-4 h-4 text-[#677D6A]" />
-                  <span className="uppercase">Historical Session Ledger</span>
-                </div>
-                <span className="font-mono text-[10px] text-[#948979]">
-                  {chartData.length} Session Logs Recorded
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left font-mono text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#393E46] text-[#948979] text-[10px] uppercase">
-                      <th className="py-2 px-3">Date</th>
-                      <th className="py-2 px-3">Working Load</th>
-                      <th className="py-2 px-3">Top Reps</th>
-                      <th className="py-2 px-3">Est. 1RM</th>
-                      <th className="py-2 px-3">Volume</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chartData.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className="border-b border-[#2C323B] hover:bg-[#222831] transition-colors text-[#DFD0B8]"
-                      >
-                        <td className="py-2.5 px-3 text-[#948979]">{row.date}</td>
-                        <td className="py-2.5 px-3 font-bold">{row.weight} kg</td>
-                        <td className="py-2.5 px-3">{row.maxReps} reps</td>
-                        <td className="py-2.5 px-3 text-[#8DAA91] font-semibold">{row.estimated1RM} kg</td>
-                        <td className="py-2.5 px-3 text-[#948979]">{row.totalVolume} kg</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </RunePanel>
-          )}
-
           {/* Progression Recharts Chart */}
           {chartData.length > 0 && (
             <RunePanel variant="carved" className="p-4 sm:p-5 space-y-4">
@@ -300,6 +310,64 @@ export const ExerciseDetailView: React.FC<ExerciseDetailViewProps> = ({ exercise
           )}
         </>
       )}
+
+      {currentExercise ? (
+        <section className="min-w-0 space-y-4" aria-labelledby="exercise-history-heading">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[#393E46] pb-3">
+            <h3 id="exercise-history-heading" className="flex min-w-0 items-center gap-2 break-words font-mono text-xs font-bold uppercase text-[#DFD0B8]">
+              <History className="h-4 w-4 shrink-0 text-[#677D6A]" aria-hidden="true" />
+              Historical Session Ledger
+            </h3>
+            {displayedHistory ? <span className="font-mono text-[10px] text-[#948979]">{displayedHistory.sessions.length} completed sessions</span> : null}
+          </div>
+
+          {historyRequest.exerciseId === currentExercise.id && historyRequest.status === 'loading' ? (
+            <div role="status" className="rounded-xs border border-[#393E46] bg-[#1C2128] p-4 font-mono text-xs text-[#948979]">
+              Loading completed history for {currentExercise.name}…
+            </div>
+          ) : historyRequest.exerciseId === currentExercise.id && historyRequest.status === 'error' ? (
+            <div role="alert" className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xs border border-[#7A4943] bg-[#2B2022] p-3 font-mono text-xs text-[#D99B92]">
+              <span className="break-words">Unable to load history for {currentExercise.name}. Try again.</span>
+              <button type="button" onClick={() => void loadExerciseHistory(currentExercise.id)} className="min-h-11 px-3 font-bold uppercase text-[#DFD0B8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8DAA91]">
+                <RotateCcw className="mr-1 inline h-4 w-4" aria-hidden="true" /> Retry {currentExercise.name} history
+              </button>
+            </div>
+          ) : displayedHistory?.sessions.length === 0 ? (
+            <EmptyState
+              title={`No Completed History for ${currentExercise.name}`}
+              description="Complete a workout with this exercise to add its recorded sets to the historical ledger."
+              icon={<History className="h-6 w-6 text-[#677D6A]" />}
+            />
+          ) : displayedHistory ? (
+            <div className="min-w-0 space-y-3">
+              {displayedHistory.sessions.map((session) => (
+                <RunePanel key={session.sessionExerciseId} variant="carved" className="min-w-0 space-y-3 p-4 sm:p-5">
+                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 border-b border-[#393E46] pb-2 font-mono text-xs">
+                    <div className="min-w-0">
+                      <p className="break-words font-bold text-[#DFD0B8]">{session.splitDayName}</p>
+                      <p className="mt-1 text-[#948979]">{localDateFormatter.format(new Date(session.completedAt))} · {session.durationMinutes} mins</p>
+                    </div>
+                    <span className="shrink-0 text-[10px] text-[#948979]">Target: {session.targetSets}×{session.targetRepMin}–{session.targetRepMax}</span>
+                  </div>
+                  <p className="break-words font-mono text-xs font-bold text-[#DFD0B8]">{session.exerciseName}</p>
+                  {session.notes ? <p className="break-words font-mono text-xs text-[#948979]">{session.notes}</p> : null}
+                  <div className="flex min-w-0 flex-wrap gap-2 font-mono text-xs">
+                    {session.sets.map((set) => (
+                      <span key={set.id} className="rounded-xs border border-[#393E46] bg-[#222831] px-2 py-1 text-[#DFD0B8]">
+                        Set {set.setNumber}: <strong className="tabular-nums text-[#8DAA91]">{formatLoad(set.weight, set.reps)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                </RunePanel>
+              ))}
+            </div>
+          ) : (
+            <div role="status" className="rounded-xs border border-[#393E46] bg-[#1C2128] p-4 font-mono text-xs text-[#948979]">
+              Loading completed history for {currentExercise.name}…
+            </div>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 };

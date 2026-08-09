@@ -214,6 +214,17 @@
 
 ## Next handoff
 
-1. Begin Phase 5 — Previous Performance + History from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
+1. Phase 5 — Previous Performance + History is implemented through the factual UI integration. Continue with Phase 6 only after the Phase 5 Task 2 commit/review boundary is accepted.
 2. Continue using hosted branch `br-dawn-mountain-azrfoy6x` through the ignored root `.env`; do not create a disposable database branch or reset/delete the hosted branch.
 3. Preserve the closed Phase 3 and Phase 4 evidence above. Rerun their hosted/browser checks only when a later change touches those transaction, ownership, or UI paths.
+
+## Phase 5 Task 2 — persisted history UI integration
+
+- The protected root now starts exercise-library, split, active-workout, and first-page completed-history reads in parallel for the authenticated user. The first visible exercise history begins as soon as the exercise library resolves, without serializing unrelated reads.
+- `ApplicationShell` receives serializable completed-history and initial exercise-history DTOs. History screens use the incumbent source/value reconciliation pattern so a server refresh replaces stale client pages.
+- History now renders factual completed-session snapshots, local calendar dates through `Intl.DateTimeFormat`, duration, notes, completed sets, nullable bodyweight loads, and weighted volume. Cursor pagination prevents duplicate requests and session duplication, retains the current page/cursor on failure, and retries safely.
+- Exercise Detail retains the later-phase mock progression, PR, chart, and AI surfaces, while its historical-session ledger is now exclusively factual. Exercise changes use the authenticated history action, safe loading/error/retry/empty states, and explicit request ordering so stale responses cannot overwrite a newer selection.
+- Previous-performance DTOs now retain their database set number. Train matches prior results by set position, displays nullable loads as bodyweight, leaves missing positions on the existing honest fallback, and refreshes server props after successful completion without replacing the completion success state.
+- Removed `getWorkoutHistory()` from the production data service and application shell. The legacy fixture file remains only as an unrelated test/mock asset.
+- Phase 5 Task 2 local gate under Node v24.18.0/pnpm 11.20.0: focused 47/47 tests passed; full `pnpm test` passed 217 tests with 8 opt-in tests skipped; `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` passed. The single required Impeccable detector run returned `[]`.
+- No hosted data access, schema/migration change, deployment, progression formula, PR replacement, or real-AI behavior occurred.

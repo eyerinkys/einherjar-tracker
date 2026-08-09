@@ -234,8 +234,8 @@ describe('previous performance selection', () => {
     );
 
     expect(previous).toEqual(new Map([[exerciseId, [
-      { weight: 85, reps: 7 },
-      { weight: 85, reps: 6 },
+      { setNumber: 1, weight: 85, reps: 7 },
+      { setNumber: 2, weight: 85, reps: 6 },
     ]]]));
   });
 
@@ -253,7 +253,7 @@ describe('previous performance selection', () => {
     const dto = await getPreviousPerformanceByExercise(
       'trusted', id('999'), activeStartedAt, [exerciseId], read,
     );
-    expect(dto.get(exerciseId)).toEqual([{ weight: 82.5, reps: 8 }]);
+    expect(dto.get(exerciseId)).toEqual([{ setNumber: 1, weight: 82.5, reps: 8 }]);
   });
 
   it('selects the latest completed unweighted session instead of falling back to an older weighted session', async () => {
@@ -286,7 +286,7 @@ describe('previous performance selection', () => {
     const dto = await getPreviousPerformanceByExercise(
       'trusted', id('999'), activeStartedAt, [exerciseId], read,
     );
-    expect(dto.get(exerciseId)).toEqual([{ weight: null, reps: 12 }]);
+    expect(dto.get(exerciseId)).toEqual([{ setNumber: 1, weight: null, reps: 12 }]);
   });
 
   it('binds every exclusion and requested exercise to the database predicate', () => {

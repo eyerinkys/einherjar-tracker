@@ -5,11 +5,11 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ActiveWorkout, SplitDay } from '@/types';
 
-const { completeWorkout, discardWorkout, saveWorkoutDraft, startWorkout } = vi.hoisted(() => ({
-  completeWorkout: vi.fn(), discardWorkout: vi.fn(), saveWorkoutDraft: vi.fn(), startWorkout: vi.fn(),
+const { completeWorkout, discardWorkout, refresh, saveWorkoutDraft, startWorkout } = vi.hoisted(() => ({
+  completeWorkout: vi.fn(), discardWorkout: vi.fn(), refresh: vi.fn(), saveWorkoutDraft: vi.fn(), startWorkout: vi.fn(),
 }));
 vi.mock('@/actions/workouts', () => ({ completeWorkout, discardWorkout, saveWorkoutDraft, startWorkout }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
 
 import { TrainView } from './TrainView';
 
@@ -81,6 +81,31 @@ describe('persistent workout logging', () => {
     expect((screen.getByRole('button', { name: 'Remove set 1' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('shows weighted, bodyweight, and missing-position previous performance without shifting sets', () => {
+    const workoutWithPrevious = {
+      ...activeWorkout,
+      exercises: [{
+        ...activeWorkout.exercises[0],
+        previousPerformance: [
+          { setNumber: 1, weight: 80, reps: 10 },
+          { setNumber: 3, weight: null, reps: 12 },
+        ],
+        sets: [
+          activeWorkout.exercises[0].sets[0],
+          activeWorkout.exercises[0].sets[1],
+          { id: id('8'), setNumber: 3, weight: null, reps: 8, isCompleted: false },
+        ],
+      }],
+    };
+
+    render(<TrainView splitDays={splitDays} activeWorkout={workoutWithPrevious} onWorkoutChange={vi.fn()} onPendingChange={vi.fn()} />);
+
+    expect(screen.getAllByText('80kg × 10').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('First set').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Bodyweight × 12').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/nullkg/)).toBeNull();
+  });
+
   it('preserves edits and exposes recovery when a stale save conflicts', async () => {
     saveWorkoutDraft.mockResolvedValue({ ok: false, code: 'CONFLICT', message: 'Workout changed in another tab. Reload and try again.' });
     render(<TrainView splitDays={splitDays} activeWorkout={activeWorkout} onWorkoutChange={vi.fn()} onPendingChange={vi.fn()} />);
@@ -124,5 +149,6 @@ describe('persistent workout logging', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Finish workout' }));
     expect(await screen.findByRole('heading', { name: 'Workout session saved' })).toBeTruthy();
     expect(screen.getByText('60 minutes')).toBeTruthy();
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

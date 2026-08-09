@@ -43,13 +43,13 @@ describe('active workout mapping', () => {
 
   it('hydrates previous performance selected by the shared exercise-history contract', () => {
     const previous = new Map([['exercise-1', [
-      { weight: 80, reps: 10 },
-      { weight: 80, reps: 9 },
+      { setNumber: 1, weight: 80, reps: 10 },
+      { setNumber: 2, weight: 80, reps: 9 },
     ]]]);
 
     expect(mapActiveWorkoutRows(rows, previous)?.exercises[0].previousPerformance).toEqual([
-      { weight: 80, reps: 10 },
-      { weight: 80, reps: 9 },
+      { setNumber: 1, weight: 80, reps: 10 },
+      { setNumber: 2, weight: 80, reps: 9 },
     ]);
   });
 });

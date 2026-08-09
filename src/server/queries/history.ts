@@ -354,6 +354,7 @@ export async function getPreviousPerformanceByExercise(
   return new Map([...selected].map(([exerciseId, rows]) => [
     exerciseId,
     rows.map((row) => ({
+      setNumber: row.setNumber,
       weight: row.weight === null ? null : Number(row.weight),
       reps: row.reps,
     })),

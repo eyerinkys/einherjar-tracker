@@ -16,9 +16,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 8,
         targetRepMax: 10,
         previousPerformance: [
-          { weight: 50, reps: 10 },
-          { weight: 50, reps: 9 },
-          { weight: 50, reps: 9 },
+          { setNumber: 1, weight: 50, reps: 10 },
+          { setNumber: 2, weight: 50, reps: 9 },
+          { setNumber: 3, weight: 50, reps: 9 },
         ],
         sets: [
           { setNumber: 1, weight: 50, reps: 10, isCompleted: true },
@@ -33,9 +33,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 10,
         targetRepMax: 12,
         previousPerformance: [
-          { weight: 5, reps: 12 },
-          { weight: 5, reps: 12 },
-          { weight: 5, reps: 11 },
+          { setNumber: 1, weight: 5, reps: 12 },
+          { setNumber: 2, weight: 5, reps: 12 },
+          { setNumber: 3, weight: 5, reps: 11 },
         ],
         sets: [
           { setNumber: 1, weight: 5, reps: 12, isCompleted: true },
@@ -50,9 +50,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 10,
         targetRepMax: 12,
         previousPerformance: [
-          { weight: 7.5, reps: 10 },
-          { weight: 7.5, reps: 9 },
-          { weight: 7.5, reps: 8 },
+          { setNumber: 1, weight: 7.5, reps: 10 },
+          { setNumber: 2, weight: 7.5, reps: 9 },
+          { setNumber: 3, weight: 7.5, reps: 8 },
         ],
         sets: [
           { setNumber: 1, weight: 7.5, reps: 10, isCompleted: true },
@@ -67,10 +67,10 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 12,
         targetRepMax: 15,
         previousPerformance: [
-          { weight: 12.5, reps: 14 },
-          { weight: 12.5, reps: 13 },
-          { weight: 12.5, reps: 12 },
-          { weight: 12.5, reps: 12 },
+          { setNumber: 1, weight: 12.5, reps: 14 },
+          { setNumber: 2, weight: 12.5, reps: 13 },
+          { setNumber: 3, weight: 12.5, reps: 12 },
+          { setNumber: 4, weight: 12.5, reps: 12 },
         ],
         sets: [
           { setNumber: 1, weight: 12.5, reps: 12, isCompleted: true },
@@ -95,9 +95,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 5,
         targetRepMax: 5,
         previousPerformance: [
-          { weight: 80, reps: 5 },
-          { weight: 80, reps: 5 },
-          { weight: 80, reps: 4 },
+          { setNumber: 1, weight: 80, reps: 5 },
+          { setNumber: 2, weight: 80, reps: 5 },
+          { setNumber: 3, weight: 80, reps: 4 },
         ],
         sets: [
           { setNumber: 1, weight: 80, reps: 5, isCompleted: true },
@@ -112,9 +112,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 8,
         targetRepMax: 10,
         previousPerformance: [
-          { weight: 45, reps: 10 },
-          { weight: 45, reps: 10 },
-          { weight: 45, reps: 9 },
+          { setNumber: 1, weight: 45, reps: 10 },
+          { setNumber: 2, weight: 45, reps: 10 },
+          { setNumber: 3, weight: 45, reps: 9 },
         ],
         sets: [
           { setNumber: 1, weight: 45, reps: 10, isCompleted: true },
@@ -129,9 +129,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 8,
         targetRepMax: 10,
         previousPerformance: [
-          { weight: 160, reps: 10 },
-          { weight: 160, reps: 10 },
-          { weight: 160, reps: 8 },
+          { setNumber: 1, weight: 160, reps: 10 },
+          { setNumber: 2, weight: 160, reps: 10 },
+          { setNumber: 3, weight: 160, reps: 8 },
         ],
         sets: [
           { setNumber: 1, weight: 160, reps: 10, isCompleted: true },
@@ -155,9 +155,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 10,
         targetRepMax: 12,
         previousPerformance: [
-          { weight: 5, reps: 12 },
-          { weight: 5, reps: 11 },
-          { weight: 5, reps: 10 },
+          { setNumber: 1, weight: 5, reps: 12 },
+          { setNumber: 2, weight: 5, reps: 11 },
+          { setNumber: 3, weight: 5, reps: 10 },
         ],
         sets: [
           { setNumber: 1, weight: 5, reps: 12, isCompleted: true },
@@ -172,9 +172,9 @@ export const MOCK_HISTORY_SESSIONS: CompletedSession[] = [
         targetRepMin: 6,
         targetRepMax: 8,
         previousPerformance: [
-          { weight: 90, reps: 6 },
-          { weight: 90, reps: 6 },
-          { weight: 90, reps: 6 },
+          { setNumber: 1, weight: 90, reps: 6 },
+          { setNumber: 2, weight: 90, reps: 6 },
+          { setNumber: 3, weight: 90, reps: 6 },
         ],
         sets: [
           { setNumber: 1, weight: 90, reps: 6, isCompleted: true },

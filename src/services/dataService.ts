@@ -3,7 +3,6 @@ import {
   UserTrainingProfile,
   Exercise,
   SplitDay,
-  CompletedSession,
   AIInsight,
   PersonalRecord,
   BodyweightEntry,
@@ -15,7 +14,6 @@ import {
   MOCK_USER_PROFILE,
   MOCK_EXERCISES,
   INITIAL_SPLIT_DAYS,
-  MOCK_HISTORY_SESSIONS,
   EXERCISE_PROGRESSION_DATA,
   MOCK_AI_INSIGHTS,
   MOCK_ACHIEVED_PRS,
@@ -45,10 +43,6 @@ export function getExercises(): Exercise[] {
 
 export function getSplitDays(): SplitDay[] {
   return INITIAL_SPLIT_DAYS;
-}
-
-export function getWorkoutHistory(): CompletedSession[] {
-  return MOCK_HISTORY_SESSIONS;
 }
 
 export function getExerciseProgression(exerciseId: string): ExerciseProgressionPoint[] {
