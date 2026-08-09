@@ -48,8 +48,14 @@ const authEnvSchema = z.object({
 
 const serverEnvSchema = databaseEnvSchema.extend(authEnvSchema.shape);
 
+const aiEnvSchema = z.object({
+  GROQ_API_KEY: z.string().trim().min(1).optional(),
+  GROQ_MODEL: z.string().trim().min(1).optional(),
+});
+
 export type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
+export type AiEnv = z.infer<typeof aiEnvSchema>;
 
 function parseEnvironment<T>(
   schema: z.ZodType<T>,
@@ -79,4 +85,12 @@ export function getDatabaseEnv(): DatabaseEnv {
 
 export function getServerEnv(): ServerEnv {
   return parseServerEnv(process.env);
+}
+
+export function parseAiEnv(values: Record<string, string | undefined>): AiEnv {
+  return parseEnvironment(aiEnvSchema, values);
+}
+
+export function getAiEnv(): AiEnv {
+  return parseAiEnv(process.env);
 }

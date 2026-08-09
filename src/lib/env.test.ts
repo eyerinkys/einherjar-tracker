@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDatabaseEnv, parseServerEnv } from './env';
+import { parseDatabaseEnv, parseServerEnv, parseAiEnv } from './env';
 
 const validEnvironment = {
   DATABASE_URL: 'postgresql://app:secret@example.com/tracker?sslmode=require',
@@ -97,5 +97,18 @@ describe('parseServerEnv', () => {
     ).toThrow(
       'Invalid server environment: BETTER_AUTH_URL, BETTER_AUTH_TRUSTED_ORIGINS'
     );
+  });
+
+  it('parses optional AI environment settings', () => {
+    expect(parseAiEnv({})).toEqual({});
+    expect(
+      parseAiEnv({
+        GROQ_API_KEY: 'gsk_test123',
+        GROQ_MODEL: 'llama3-70b-8192',
+      })
+    ).toEqual({
+      GROQ_API_KEY: 'gsk_test123',
+      GROQ_MODEL: 'llama3-70b-8192',
+    });
   });
 });
