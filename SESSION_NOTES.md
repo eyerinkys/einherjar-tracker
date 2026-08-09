@@ -246,3 +246,25 @@
 - Desktop 1440×1000 and mobile 393×659 both reported `scrollWidth === innerWidth`. Inspected screenshots showed the incumbent charcoal/bone/moss hierarchy, desktop rail, mobile bottom navigation, wrapped metadata, expanded snapshot card, and unclipped factual set chips. The final browser console contained 0 errors and 0 warnings; observed auth, RSC, and Server Action requests returned HTTP 200.
 - The two exact temporary users were deleted; cascades removed their auth and workout rows. Hosted read-back verified 0 temporary users, 0 accounts, and 0 workout sessions. The localhost server, browser session, screenshots, response files, fixture script, and temporary Playwright workspace were removed.
 - No application deployment occurred.
+
+## Phase 6A — normalized workout facts and formulas
+
+- Added a pure deterministic progression-fact boundary that consumes the Phase 5 user-scoped `ExerciseHistory` DTO and returns stable chronological facts without database, auth, profile, notes, AI, or UI dependencies.
+- Each fact retains the session/exercise snapshot identifiers, completion timestamp, historical targets, every completed set, and the first `targetSets` completed sets as comparable planned work. Session and set inputs are copied and sorted by stable timestamp/ID and set-number/ID ties, so reordered input produces identical output.
+- Derived metrics include planned-set count, total planned reps, planned volume, full completed-session volume, most-frequent planned working load with higher-load tie-breaking, maximum load, maximum reps at each exact weighted/bodyweight load, and the best-set Epley estimated 1RM.
+- Epley estimates reject null/non-finite/non-positive loads and non-positive/non-integer reps, preserve a one-rep observation as the actual load, and round valid estimates to one decimal. Bodyweight facts retain reps and exact-load maxima while load, working-load, and estimated-1RM metrics remain explicitly nullable.
+- Every fact after the first includes rep/load/planned-volume/full-volume/estimated-1RM changes from the previous completed session. The recent direction compares the earliest and latest of the most recent four chronological facts. Load deltas preserve fractional changes; only Epley-derived changes use one-decimal rounding, and volume arithmetic is normalized to avoid JavaScript floating-point artifacts.
+- This subphase does not derive PRs, progression statuses, server query actions, chart/UI integration, or persisted derived state; those remain owned by Phases 6B, 6C, and 7.
+
+## Phase 6A verification — 2026-08-09
+
+- Test-first focused coverage observed the missing implementation and formula failures before the production implementation. The focused suite covers invalid/one-rep/fractional Epley cases, stable chronological normalization, planned versus extra-set volume, mixed and tied loads, bodyweight facts, previous-session deltas, latest-four direction, reordered input, fractional load changes, and decimal volume arithmetic.
+- Final local gate used Node v24.18.0 and pnpm 11.20.0: `pnpm test` passed 31 files and 233 tests with the existing 3 opt-in files / 8 tests skipped; `pnpm typecheck`, `pnpm lint`, the webpack `pnpm build`, and `git diff --check` passed.
+- Independent review found one Important issue where one-decimal rounding could erase a valid fractional working-load delta. A failing `-0.05 kg` regression drove the fix; the same fix normalized fractional volume calculations. Scoped re-review confirmed both findings resolved with no remaining Critical or Important issue.
+- No schema/migration, hosted database mutation, browser fixture, production deployment, or live application verification was needed because Phase 6A is a pure local calculation layer.
+
+## Next handoff after Phase 6A
+
+1. Implement only Phase 6B — PR derivation — against the reviewed `DerivedWorkoutFacts` contract.
+2. Compare each fact only with earlier chronological facts and derive the four approved PR types without future leakage or persisted PR source-of-truth rows.
+3. Preserve the closed Phase 3–5 hosted/browser evidence. Phase 6B remains pure unless its implementation materially changes an existing server/database/UI boundary.

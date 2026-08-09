@@ -66,3 +66,54 @@ export interface ExerciseProgressionPoint {
   estimated1RM: number;
   totalVolume: number;
 }
+
+export interface WorkoutFactSet {
+  id: string;
+  setNumber: number;
+  weightKg: number | null;
+  reps: number;
+}
+
+export interface RepsAtLoad {
+  loadKg: number | null;
+  reps: number;
+}
+
+export interface WorkoutFactMetrics {
+  plannedSetCount: number;
+  totalPlannedReps: number;
+  plannedVolumeKg: number;
+  fullSessionVolumeKg: number;
+  workingLoadKg: number | null;
+  maximumLoadKg: number | null;
+  maximumRepsByLoad: RepsAtLoad[];
+  bestEstimated1RMKg: number | null;
+}
+
+export interface WorkoutMetricChanges {
+  workingLoadKg: number | null;
+  totalPlannedReps: number;
+  plannedVolumeKg: number;
+  fullSessionVolumeKg: number;
+  bestEstimated1RMKg: number | null;
+}
+
+export interface WorkoutFact {
+  exerciseId: string;
+  sessionId: string;
+  sessionExerciseId: string;
+  completedAt: string;
+  exerciseName: string;
+  targetSets: number;
+  targetRepMin: number;
+  targetRepMax: number;
+  plannedSets: WorkoutFactSet[];
+  completedSets: WorkoutFactSet[];
+  metrics: WorkoutFactMetrics;
+  deltaFromPrevious: WorkoutMetricChanges | null;
+}
+
+export interface DerivedWorkoutFacts {
+  facts: WorkoutFact[];
+  recentDirection: WorkoutMetricChanges | null;
+}
