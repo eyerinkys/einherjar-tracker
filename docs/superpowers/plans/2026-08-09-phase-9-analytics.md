@@ -23,7 +23,7 @@
 
 ---
 
-### Task 9.1 — Define Analytics DTOs and Contracts
+### Task 1: Define Analytics DTOs and Contracts
 
 **Files:**
 - Create: `src/types/analytics.ts`
@@ -156,7 +156,7 @@ git commit -m "feat(analytics): define analytics DTO types and contracts"
 
 ---
 
-### Task 9.2 — Implement Analytics Server Query Aggregator
+### Task 2: Implement Analytics Server Query Aggregator
 
 **Files:**
 - Create: `src/server/queries/analytics.ts`
@@ -228,7 +228,7 @@ git commit -m "feat(analytics): implement server query aggregator for analytics 
 
 ---
 
-### Task 9.3 — Implement Analytics Server Action
+### Task 3: Implement Analytics Server Action
 
 **Files:**
 - Create: `src/actions/analytics.ts`
@@ -285,7 +285,7 @@ git commit -m "feat(analytics): implement getAnalyticsOverview Server Action"
 
 ---
 
-### Task 9.4 — Connect Analytics UI and Remove Replaced Mocks
+### Task 4: Connect Analytics UI and Remove Replaced Mocks
 
 **Files:**
 - Modify: `src/components/screens/AnalyticsView.tsx`
@@ -334,7 +334,7 @@ git commit -m "feat(ui): connect AnalyticsView to real server data and clean up 
 
 ---
 
-### Task 9.5 — Whole-Phase Verification and Handoff
+### Task 5: Whole-Phase Verification and Handoff
 
 **Files:**
 - Modify: `SESSION_NOTES.md`
