@@ -332,3 +332,28 @@
 1. Phase 6 is complete. Begin Phase 7 — Connect Progression UI — from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
 2. Replace mock progression, PR, and chart inputs with authenticated user-owned history adapters while preserving the approved screen design and the reviewed Phase 6 facts/records/classification contracts.
 3. Phase 7 changes server/UI boundaries, so rerun focused ownership tests and actual desktop/mobile browser verification in addition to the local code gate. Preserve the closed Phase 3–5 hosted evidence unless those paths materially change.
+
+## Phase 7 — Connect Progression UI
+
+- Connected `ExerciseDetailView` (under the Exercise Detail tab of the Progress page) directly to the Phase 6 deterministic progression engine (`deriveWorkoutFacts`, `derivePersonalRecords`, `classifyProgression`).
+- Removed `LEGACY_PROGRESS_ID_BY_BUILT_IN_ID` mapping and `dataService` mock progression imports (`getExerciseProgression`, `getAIInsightForExercise`, `getAchievedPRs`) from `ExerciseDetailView`.
+- Wired real `RuneBadge` status badges (`PROGRESSING`, `READY_TO_INCREASE_LOAD`, `ADAPTING_TO_NEW_LOAD`, `STALLED`, `REGRESSING`, `INSUFFICIENT_DATA`) computed from the authenticated user's `ExerciseHistory`.
+- Wired real Achieved Record (Fact) cards displaying highest working load and best estimated 1RM derived from completed sets.
+- Wired deterministic overload guidance rendering `classifyProgression` explanation text and factual session comparisons.
+- Rendered honest "AI LAYER PENDING" / "UNAVAILABLE" states for prediction cards and AI guidance panels until Phase 8.
+- Populated Recharts `AreaChart` series dynamically from `facts.facts` metrics (`workingLoadKg`, `bestEstimated1RMKg`).
+- Handled empty history (0 sessions) and single-session history (`INSUFFICIENT_DATA`) cleanly.
+- Cleaned up obsolete `getExerciseProgression` helper and `EXERCISE_PROGRESSION_DATA` import in `dataService.ts`.
+
+## Phase 7 verification — 2026-08-09
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Unit suite: `pnpm test` passed 34 files and 273 tests with 3 opt-in database files / 8 tests skipped.
+- Typecheck & Lint: `pnpm typecheck` and `pnpm lint` passed with 0 errors.
+- Build: Webpack production build (`next build --webpack`) completed successfully with 6 static/dynamic routes prerendered and TypeScript validation passed.
+
+## Next handoff after Phase 7
+
+1. Phase 7 is complete. Begin Phase 8 — Groq AI Layer — from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
+2. Add training profiles, bounded structured exercise context, Groq API client with JSON-schema structured outputs, context-hash caching, and graceful fallback handling.
+
