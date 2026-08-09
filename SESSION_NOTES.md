@@ -354,8 +354,35 @@
 - Typecheck & Lint: `pnpm typecheck` and `pnpm lint` passed with 0 errors.
 - Build: Webpack production build (`next build --webpack`) completed successfully with 6 static/dynamic routes prerendered and TypeScript validation passed.
 
-## Next handoff after Phase 7
+## Phase 8 — Groq AI Layer
 
-1. Phase 7 is complete. Begin Phase 8 — Groq AI Layer — from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
-2. Add training profiles, bounded structured exercise context, Groq API client with JSON-schema structured outputs, context-hash caching, and graceful fallback handling.
+- Added `training_profiles` and `ai_guidance_cache` tables and database migration `0001_*.sql`.
+- Added authenticated training-profile queries and actions (`getTrainingProfile`, `updateTrainingProfile`).
+- Added deterministic bounded AI context builder and SHA-256 context hasher (`schemaVersion: 1`, max 6 recent session facts, trimmed/bounded user notes, no user identity/auth tokens).
+- Added server-only Groq HTTP client with strict JSON schema response format (`openai/gpt-oss-20b`), 8-second timeout, rate limit (429) retry handling, and redacted error messages.
+- Added guidance orchestration service with single-user caching, semantic validation, and error recovery.
+- Connected `ExerciseDetailView` to real AI recommendations, probable PR predictions, and collapsible `TrainingProfileForm`.
+
+## Phase 9 — Analytics Overview
+
+- Added `AnalyticsOverviewDTO`, `AnalyticsItemDTO`, `AnalyticsPRDTO`, and `AnalyticsSummaryDTO` types.
+- Added server query aggregator `getAnalyticsOverviewData(userId)` that batch-fetches completed workout facts, target ranges, and cached AI guidance to run Phase 6 pure functions in memory.
+- Added `getAnalyticsOverview()` Server Action with strict `requireUser()` authentication and error redaction.
+- Connected `AnalyticsView` component to `getAnalyticsOverview()`, displaying live progression counts, status groups, 30-day PR ledger, empty state, and retry handling.
+- Removed obsolete mock getters `getAIInsights()` and `getAchievedPRs()` from `dataService.ts`.
+
+## Phase 9 verification — 2026-08-09
+
+- Runtime: Node v24.18.0 via `/tmp/einherjar-node24/node_modules/node/bin` and pnpm 11.20.0.
+- Unit suite: `pnpm test` passed 44 files and 313 tests with 3 opt-in database files / 8 tests skipped.
+- Typecheck & Lint: `pnpm typecheck` and `pnpm lint` passed with 0 errors and 0 warnings.
+- Database Check: `pnpm exec drizzle-kit check` passed (`Everything's fine 🐶🔥`).
+- Build: Webpack production build (`next build --webpack`) completed successfully with all static/dynamic routes prerendered.
+- Diff check: `git diff --check` passed with 0 warnings.
+
+## Next handoff after Phase 9
+
+1. Phase 9 is complete. Begin Phase 10 — Bodyweight — from `docs/superpowers/plans/grand_plan.md`.
+2. Add `bodyweight_logs` table schema and migration, same-day upsert queries/actions, ordered bodyweight history, net change/trend calculations, and connect `BodyweightView`.
+
 

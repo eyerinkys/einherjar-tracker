@@ -1,14 +1,13 @@
 import 'server-only';
 
-import { eq, and } from 'drizzle-orm';
-import { db } from '../../db/client';
+import { eq } from 'drizzle-orm';
+import { getDb } from '../../db/client';
 import { aiGuidanceCache } from '../../db/schema/ai';
 import { getExercises } from './exercises';
 import { getExerciseHistory } from './history';
 import { deriveWorkoutFacts } from '../../lib/progression/facts';
 import { derivePersonalRecords } from '../../lib/progression/records';
 import { classifyProgression } from '../../lib/progression/classification';
-import type { ExerciseHistory } from '../../types/history';
 import type { DerivedWorkoutFacts, PersonalRecordAchievement } from '../../types/progression';
 import type {
   AnalyticsOverviewDTO,
@@ -72,6 +71,7 @@ const defaultAnalyticsAdapter: AnalyticsReadAdapter = {
   },
 
   async getCachedAiGuidance(userId: string): Promise<Map<string, { guidance: string }>> {
+    const db = getDb();
     const rows = await db
       .select({
         exerciseId: aiGuidanceCache.exerciseId,
@@ -136,7 +136,7 @@ export async function getAnalyticsOverviewData(
       max: facts.facts[facts.facts.length - 1].targetRepMax,
     };
 
-    const classification = classifyProgression(facts, target.min, target.max);
+    const classification = classifyProgression(facts);
     const prs = derivePersonalRecords(facts);
 
     for (const achievement of prs.achievements) {

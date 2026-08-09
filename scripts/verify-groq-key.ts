@@ -54,9 +54,9 @@ Based on this data, provide your recommendation in the required JSON format.`;
     console.log('\n✅ Groq API Key is VALID!');
     console.log(`Response received in ${duration}ms:`);
     console.log(JSON.stringify(result, null, 2));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('\n❌ Groq API Verification Failed:');
-    console.error(error.message || error);
+    console.error((error as Error).message || error);
     process.exit(1);
   }
 }

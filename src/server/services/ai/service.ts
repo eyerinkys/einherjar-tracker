@@ -6,7 +6,7 @@ import { buildUserPrompt, SYSTEM_PROMPT } from '@/lib/ai/prompts';
 import { fetchGroqRecommendation, GroqClientError } from '@/lib/ai/groq';
 import { validateSemanticRecommendation } from '@/lib/ai/schemas';
 import { exercises } from '@/db/schema/core';
-import type { ExerciseAiGuidance } from '@/types/ai';
+import type { ExerciseAiGuidance, AiUnavailableReason } from '@/types/ai';
 import type { AiRecommendation } from '@/lib/ai/schemas';
 
 // Timeout for Groq API in ms
@@ -14,20 +14,22 @@ const GROQ_TIMEOUT = 10000;
 const RETRY_AFTER_SECONDS = 60 * 60; // 1 hour for hard failures
 const RATE_LIMIT_RETRY_SECONDS = 60 * 5; // 5 mins for rate limits
 
-function calculateRetryTime(error: any): Date {
+function calculateRetryTime(error: unknown): Date {
+  const err = error as { name?: string; status?: number };
   const now = new Date();
-  if ((error.name === 'GroqClientError' || error instanceof GroqClientError) && error.status === 429) {
+  if ((err.name === 'GroqClientError' || error instanceof GroqClientError) && err.status === 429) {
     return new Date(now.getTime() + RATE_LIMIT_RETRY_SECONDS * 1000);
   }
   return new Date(now.getTime() + RETRY_AFTER_SECONDS * 1000);
 }
 
-function determineFailureCode(error: any): string {
-  if (error.name === 'AbortError') return 'timeout';
-  if (error.name === 'GroqClientError' || error instanceof GroqClientError) {
-    if (error.status === 429) return 'rate_limited';
-    if (error.status && error.status >= 500) return 'provider_error';
-    if (error.message && error.message.includes('parse')) return 'invalid_json';
+function determineFailureCode(error: unknown): AiUnavailableReason {
+  const err = error as { name?: string; status?: number; message?: string };
+  if (err.name === 'AbortError') return 'timeout';
+  if (err.name === 'GroqClientError' || error instanceof GroqClientError) {
+    if (err.status === 429) return 'rate_limited';
+    if (err.status && err.status >= 500) return 'provider_error';
+    if (err.message && err.message.includes('parse')) return 'invalid_json';
     return 'invalid_response';
   }
   return 'network_error';
@@ -93,7 +95,7 @@ export async function getAiGuidanceForExercise(
         return {
           availability: 'unavailable',
           exerciseId,
-          reason: (entry.failureCode as any) || 'provider_error',
+          reason: (entry.failureCode as AiUnavailableReason) || 'provider_error',
           retryable: true,
           retryAfterSeconds: Math.ceil((new Date(entry.retryAfter).getTime() - now.getTime()) / 1000)
         };
@@ -122,8 +124,8 @@ export async function getAiGuidanceForExercise(
     
     // Validate Semantics
     // Transform history for semantic validation
-    const highestLoad = isBodyweight ? null : Math.max(...context.history.flatMap(h => h.sets.map((s: any) => s.weightKg)));
-    const repsAtLoad = context.history.flatMap(h => h.sets.map((s: any) => ({ loadKg: s.weightKg, reps: s.reps })));
+    const highestLoad = isBodyweight ? null : Math.max(...context.history.flatMap(h => h.sets.map((s: { weightKg: number | null }) => s.weightKg ?? 0)));
+    const repsAtLoad = context.history.flatMap(h => h.sets.map((s: { weightKg: number | null; reps: number }) => ({ loadKg: s.weightKg, reps: s.reps })));
     
     const isValid = validateSemanticRecommendation(recommendation, {
       isBodyweight,
@@ -163,7 +165,7 @@ export async function getAiGuidanceForExercise(
       recommendation
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const failureCode = determineFailureCode(error);
     const retryAfterDate = calculateRetryTime(error);
 
@@ -191,7 +193,7 @@ export async function getAiGuidanceForExercise(
     return {
       availability: 'unavailable',
       exerciseId,
-      reason: failureCode as any,
+      reason: failureCode,
       retryable: true,
       retryAfterSeconds: Math.ceil((retryAfterDate.getTime() - now.getTime()) / 1000)
     };

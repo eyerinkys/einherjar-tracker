@@ -13,7 +13,7 @@ export const AnalyticsView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchOverview = useCallback(async () => {
+  const loadOverview = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -31,8 +31,28 @@ export const AnalyticsView: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchOverview();
-  }, [fetchOverview]);
+    let active = true;
+    getAnalyticsOverview()
+      .then((res) => {
+        if (!active) return;
+        if (res.ok) {
+          setData(res.data);
+        } else {
+          setError(res.message);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setError('Unable to load analytics. Please try again.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -48,7 +68,7 @@ export const AnalyticsView: React.FC = () => {
       <RunePanel variant="carved" className="p-6 text-center space-y-4 border-[#5A383B]">
         <div className="font-mono text-xs text-[#B88989] font-bold">{error}</div>
         <button
-          onClick={fetchOverview}
+          onClick={loadOverview}
           className="inline-flex items-center gap-2 min-h-11 px-4 py-2 bg-[#222831] border border-[#393E46] rounded-xs font-mono text-xs text-[#DFD0B8] hover:border-[#677D6A] uppercase tracking-wider transition-all"
         >
           <RefreshCw className="w-4 h-4" />

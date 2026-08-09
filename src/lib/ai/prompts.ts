@@ -16,7 +16,7 @@ export function buildUserPrompt(
   exerciseName: string,
   isBodyweight: boolean,
   profile: TrainingProfileDTO | null,
-  history: any[]
+  history: unknown[]
 ): string {
   let prompt = `Exercise: ${exerciseName} (${isBodyweight ? 'Bodyweight' : 'Weighted'})\n`;
   

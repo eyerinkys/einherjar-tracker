@@ -60,7 +60,7 @@ export async function fetchGroqRecommendation(
 
   try {
     return JSON.parse(content);
-  } catch (error) {
+  } catch {
     throw new GroqClientError('Failed to parse Groq response as JSON');
   }
 }
