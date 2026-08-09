@@ -214,18 +214,34 @@
 
 ## Next handoff
 
-1. Phase 5 — Previous Performance + History is implemented through the factual UI integration. Continue with Phase 6 only after the Phase 5 Task 2 commit/review boundary is accepted.
+1. Begin Phase 6 — Deterministic Progression Engine from `docs/superpowers/plans/2026-08-08-gym-tracker-backend-implementation.md`.
 2. Continue using hosted branch `br-dawn-mountain-azrfoy6x` through the ignored root `.env`; do not create a disposable database branch or reset/delete the hosted branch.
-3. Preserve the closed Phase 3 and Phase 4 evidence above. Rerun their hosted/browser checks only when a later change touches those transaction, ownership, or UI paths.
+3. Preserve the closed Phase 3, Phase 4, and Phase 5 evidence above. Rerun their hosted/browser checks only when a later change touches those transaction, ownership, history, or UI paths.
 
-## Phase 5 Task 2 — persisted history UI integration
+## Phase 5 — previous performance and factual history
 
+- Added owner-scoped completed-session pagination, completed-session detail, per-exercise history, and shared previous-performance selection. The stable cursor orders by `(completed_at DESC, id DESC)`, defaults to 20, caps at 50, and carries both ordering fields.
+- Completed history maps only completed sessions and completed sets, preserves snapshot names/targets/notes and nullable deleted source Split IDs, derives duration from stored UTC timestamps, and converts PostgreSQL numeric load only at the frontend DTO boundary.
+- Authenticated history Server Actions accept only strict Zod-validated cursor/page/session/exercise inputs and derive ownership through `requireUser()`. Missing and foreign records remain enumeration-safe `NOT_FOUND` results.
+- Active-workout reads and start/save hydration share the same latest-eligible previous-performance selector. It uses a strict pre-active-session cutoff, supports nullable bodyweight loads, retains set numbers, preserves missing positions, and keeps exact numeric text until DTO mapping or database reuse.
 - The protected root now starts exercise-library, split, active-workout, and first-page completed-history reads in parallel for the authenticated user. The first visible exercise history begins as soon as the exercise library resolves, without serializing unrelated reads.
 - `ApplicationShell` receives serializable completed-history and initial exercise-history DTOs. History screens use the incumbent source/value reconciliation pattern so a server refresh replaces stale client pages.
 - History now renders factual completed-session snapshots, local calendar dates through `Intl.DateTimeFormat`, duration, notes, completed sets, nullable bodyweight loads, and weighted volume. Cursor pagination prevents duplicate requests and session duplication, retains the current page/cursor on failure, and retries safely.
 - Exercise Detail retains the later-phase mock progression, PR, chart, and AI surfaces, while its historical-session ledger is now exclusively factual. Exercise changes use the authenticated history action, safe loading/error/retry/empty states, and explicit request ordering so stale responses cannot overwrite a newer selection.
 - Previous-performance DTOs now retain their database set number. Train matches prior results by set position, displays nullable loads as bodyweight, leaves missing positions on the existing honest fallback, and refreshes server props after successful completion without replacing the completion success state.
 - Removed `getWorkoutHistory()` from the production data service and application shell. The legacy fixture file remains only as an unrelated test/mock asset.
-- Phase 5 Task 2 local gate under Node v24.18.0/pnpm 11.20.0: focused 47/47 tests passed; full `pnpm test` passed 217 tests with 8 opt-in tests skipped; `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` passed. The single required Impeccable detector run returned `[]`.
-- No hosted data access, schema/migration change, deployment, progression formula, PR replacement, or real-AI behavior occurred.
+- Final controller gate under Node v24.18.0/pnpm 11.20.0: full `pnpm test` passed 30 files and 218 tests with 3 opt-in files / 8 tests skipped; `pnpm typecheck`, `pnpm lint`, current-source `pnpm build`, `git diff --check`, and clean status passed. The single bounded Impeccable detector run returned `[]`.
 - Fix Round 1 (`ExerciseDetailView` refresh reconciliation): a refreshed first-exercise history prop now resets a non-initial selection and ledger together through the same source/value pattern, preventing an indefinite loading fallback. The focused regression passed 7/7; page/shell/exercise coverage passed 18/18; typecheck, lint, and diff-check passed. No server/client boundary changed, so the build was not rerun; the single-use Impeccable detector was not rerun.
+- Independent task reviews found and closed four Important issues: exact numeric prefill round-tripping, nullable previous weights, gapped set-number prefill, and refreshed non-initial exercise selection. Both task fix rounds were approved with no remaining Critical or Important finding. One Minor remains documented: two local-date component tests depend on the host timezone instead of pinning it.
+- No schema or migration change was required. Phase 5 commits are `0dc10f2`, `4621841`, `0eddb30`, `a853ec9`, and `bc782c4`.
+
+## Hosted Phase 5 verification — 2026-08-09
+
+- The mode-600 root `.env` resolved without printing credentials to hosted Neon database `neondb`, branch `br-dawn-mountain-azrfoy6x`. `.env.local` was retained; explicit environment preloading kept `.env` authoritative.
+- Created two exact temporary allowlisted accounts, then inserted one scoped transaction: User A received 22 completed Bench Press snapshots plus one active workout; User B received one foreign completed-session sentinel. No schema, migration, seed, reset, or unrelated production row changed.
+- The current production bundle ran locally against the hosted database. Desktop 1440×1000 verified immediate previous performance at set positions 1 and 3 with the missing set 2 left as `First set`, including `82.5kg × 5` and `Bodyweight × 12`.
+- History loaded the newest 20 owned sessions, expanded factual snapshot notes/targets/sets, and paginated to exactly 22 unique sessions. `Load more` then disappeared; the foreign session/name never rendered.
+- Exercise Detail rendered exactly 22 chronological factual Bench Press sessions, preserved the historical exercise name/targets/notes, showed the weighted/bodyweight sets, switched to an honest empty Lat Pulldown history, and reloaded the populated Bench Press ledger.
+- Desktop 1440×1000 and mobile 393×659 both reported `scrollWidth === innerWidth`. Inspected screenshots showed the incumbent charcoal/bone/moss hierarchy, desktop rail, mobile bottom navigation, wrapped metadata, expanded snapshot card, and unclipped factual set chips. The final browser console contained 0 errors and 0 warnings; observed auth, RSC, and Server Action requests returned HTTP 200.
+- The two exact temporary users were deleted; cascades removed their auth and workout rows. Hosted read-back verified 0 temporary users, 0 accounts, and 0 workout sessions. The localhost server, browser session, screenshots, response files, fixture script, and temporary Playwright workspace were removed.
+- No application deployment occurred.
