@@ -37,6 +37,20 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
   const [workoutState, setWorkoutState] = useState(() => ({ source: initialActiveWorkout, value: initialActiveWorkout }));
   const activeWorkout = workoutState.source === initialActiveWorkout ? workoutState.value : initialActiveWorkout;
   const [progressSubTab, setProgressSubTab] = useState<'exercise' | 'analytics'>('exercise');
+  const [exerciseState, setExerciseState] = useState(() => ({
+    source: exercises,
+    value: exercises,
+  }));
+  const availableExercises =
+    exerciseState.source === exercises ? exerciseState.value : exercises;
+  const handleExerciseCreated = (newExercise: Exercise) => {
+    setExerciseState((prev) => ({
+      source: exercises,
+      value: [...prev.value, newExercise].sort((a, b) =>
+        a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
+      ),
+    }));
+  };
   const [splitState, setSplitState] = useState(() => ({
     source: initialSplitDays,
     value: initialSplitDays,
@@ -61,10 +75,11 @@ export function ApplicationShell({ exercises, initialSplitDays, initialActiveWor
 
           {activeTab === 'split' ? (
             <SplitView
-              availableExercises={exercises}
+              availableExercises={availableExercises}
               onPendingChange={setSplitPending}
               splitDays={splitDays}
               onUpdateSplitDays={handleUpdateSplitDays}
+              onExerciseCreated={handleExerciseCreated}
             />
           ) : null}
 

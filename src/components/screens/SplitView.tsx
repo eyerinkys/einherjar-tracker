@@ -17,6 +17,7 @@ import {
   reorderSplitExercises,
   updateSplitExercise,
 } from '@/actions/split';
+import { createCustomExercise } from '@/actions/exercises';
 import type { ActionResult } from '@/server/action-result';
 
 interface SplitViewProps {
@@ -24,6 +25,7 @@ interface SplitViewProps {
   splitDays: SplitDay[];
   onPendingChange?: (pending: boolean) => void;
   onUpdateSplitDays: (days: SplitDay[]) => void;
+  onExerciseCreated?: (exercise: Exercise) => void;
 }
 
 interface ExerciseDraft {
@@ -89,6 +91,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
   splitDays,
   onPendingChange,
   onUpdateSplitDays,
+  onExerciseCreated,
 }) => {
   const router = useRouter();
   const localExerciseIdPrefix = useId();
@@ -98,6 +101,57 @@ export const SplitView: React.FC<SplitViewProps> = ({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedAddExerciseId, setSelectedAddExerciseId] = useState<string>(availableExercises[0]?.id || '');
+  
+  // Custom exercise state
+  const [isCreatingCustom, setIsCreatingCustom] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customMuscleGroup, setCustomMuscleGroup] = useState('');
+  const [customEquipment, setCustomEquipment] = useState('');
+  const [customCategory, setCustomCategory] = useState<'compound' | 'isolation'>('compound');
+  const [customExerciseError, setCustomExerciseError] = useState<string | null>(null);
+  const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
+
+  const handleCreateCustomExercise = async () => {
+    setCustomExerciseError(null);
+    if (!customName.trim()) {
+      setCustomExerciseError('Exercise name is required.');
+      return;
+    }
+    if (!customMuscleGroup.trim()) {
+      setCustomExerciseError('Target muscle group is required.');
+      return;
+    }
+    if (!customEquipment.trim()) {
+      setCustomExerciseError('Equipment type is required.');
+      return;
+    }
+
+    setIsSubmittingCustom(true);
+    try {
+      const result = await createCustomExercise({
+        name: customName,
+        muscleGroup: customMuscleGroup,
+        equipment: customEquipment,
+        category: customCategory,
+      });
+
+      if (!result.ok) {
+        setCustomExerciseError(result.message);
+        return;
+      }
+
+      onExerciseCreated?.(result.data);
+      setSelectedAddExerciseId(result.data.id);
+      setIsCreatingCustom(false);
+      setCustomName('');
+      setCustomMuscleGroup('');
+      setCustomEquipment('');
+    } catch {
+      setCustomExerciseError('Failed to create custom exercise.');
+    } finally {
+      setIsSubmittingCustom(false);
+    }
+  };
   const [targetSetsInput, setTargetSetsInput] = useState<number>(3);
   const [targetRepMinInput, setTargetRepMinInput] = useState<number>(8);
   const [targetRepMaxInput, setTargetRepMaxInput] = useState<number>(10);
@@ -1096,28 +1150,111 @@ export const SplitView: React.FC<SplitViewProps> = ({
                   {addExerciseError}
                 </p>
               ) : null}
-              <div>
-                <label
-                  className="block text-[#948979] mb-1"
-                  htmlFor={`${localExerciseIdPrefix}-exercise-select`}
-                >
-                  Select Exercise
-                </label>
-                <select
-                  id={`${localExerciseIdPrefix}-exercise-select`}
-                  ref={addExerciseSelectRef}
-                  value={selectedAddExerciseId}
-                  onChange={(e) => setSelectedAddExerciseId(e.target.value)}
-                  className="min-h-11 w-full bg-[#222831] border border-[#393E46] p-2 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
-                  disabled={isPending}
-                >
-                  {availableExercises.map((ex) => (
-                    <option key={ex.id} value={ex.id}>
-                      {ex.name} ({ex.muscleGroup})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {!isCreatingCustom ? (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label
+                      className="block text-[#948979]"
+                      htmlFor={`${localExerciseIdPrefix}-exercise-select`}
+                    >
+                      Select Exercise
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingCustom(true)}
+                      className="text-[11px] text-[#8DAA91] hover:underline hover:text-[#DFD0B8] transition-colors"
+                      disabled={isPending}
+                    >
+                      + Create Custom Exercise
+                    </button>
+                  </div>
+                  <select
+                    id={`${localExerciseIdPrefix}-exercise-select`}
+                    ref={addExerciseSelectRef}
+                    value={selectedAddExerciseId}
+                    onChange={(e) => setSelectedAddExerciseId(e.target.value)}
+                    className="min-h-11 w-full bg-[#222831] border border-[#393E46] p-2 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
+                    disabled={isPending}
+                  >
+                    {availableExercises.map((ex) => (
+                      <option key={ex.id} value={ex.id}>
+                        {ex.name} ({ex.muscleGroup}){ex.isCustom ? ' [Custom]' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="p-3 bg-[#222831] border border-[#677D6A] rounded-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#DFD0B8]">CREATE NEW CUSTOM EXERCISE</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingCustom(false)}
+                      className="text-xs text-[#948979] hover:text-[#DFD0B8]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {customExerciseError && (
+                    <p className="text-xs text-[#D6A0A0]" role="alert">{customExerciseError}</p>
+                  )}
+                  <div>
+                    <label className="block text-[#948979] text-[11px] mb-1">Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Incline Cable Flyes"
+                      value={customName}
+                      onChange={(e) => setCustomName(e.target.value)}
+                      className="w-full bg-[#161A20] border border-[#393E46] p-2 text-sm text-[#DFD0B8] rounded-xs"
+                      disabled={isSubmittingCustom}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[#948979] text-[11px] mb-1">Muscle Group</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Upper Chest"
+                        value={customMuscleGroup}
+                        onChange={(e) => setCustomMuscleGroup(e.target.value)}
+                        className="w-full bg-[#161A20] border border-[#393E46] p-2 text-sm text-[#DFD0B8] rounded-xs"
+                        disabled={isSubmittingCustom}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#948979] text-[11px] mb-1">Equipment</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Cable"
+                        value={customEquipment}
+                        onChange={(e) => setCustomEquipment(e.target.value)}
+                        className="w-full bg-[#161A20] border border-[#393E46] p-2 text-sm text-[#DFD0B8] rounded-xs"
+                        disabled={isSubmittingCustom}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[#948979] text-[11px] mb-1">Category</label>
+                    <select
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value as 'compound' | 'isolation')}
+                      className="w-full bg-[#161A20] border border-[#393E46] p-2 text-sm text-[#DFD0B8] rounded-xs"
+                      disabled={isSubmittingCustom}
+                    >
+                      <option value="compound">Compound</option>
+                      <option value="isolation">Isolation</option>
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateCustomExercise}
+                    disabled={isSubmittingCustom}
+                    className="w-full py-2 bg-[#677D6A] text-[#161A20] font-bold text-xs uppercase tracking-wider rounded-xs hover:bg-[#8DAA91] transition-colors"
+                  >
+                    {isSubmittingCustom ? 'Creating...' : 'Save & Select Custom Exercise'}
+                  </button>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-3">
                 <div>

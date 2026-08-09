@@ -17,6 +17,7 @@ export interface SeedCommandDependencies {
 
 export function loadSeedEnvironment(path = '.env.local'): void {
   config({ path, quiet: true });
+  config({ path: '.env', quiet: true });
 }
 
 const defaultDependencies: SeedCommandDependencies = {
