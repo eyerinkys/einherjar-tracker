@@ -7,14 +7,12 @@ import {
   PersonalRecord,
   BodyweightEntry,
   ProgressPhoto,
-  ExerciseProgressionPoint,
 } from '@/types';
 import {
   MOCK_USER,
   MOCK_USER_PROFILE,
   MOCK_EXERCISES,
   INITIAL_SPLIT_DAYS,
-  EXERCISE_PROGRESSION_DATA,
   MOCK_AI_INSIGHTS,
   MOCK_ACHIEVED_PRS,
   MOCK_BODYWEIGHT_LOGS,
@@ -45,11 +43,8 @@ export function getSplitDays(): SplitDay[] {
   return INITIAL_SPLIT_DAYS;
 }
 
-export function getExerciseProgression(exerciseId: string): ExerciseProgressionPoint[] {
-  return EXERCISE_PROGRESSION_DATA[exerciseId] || [];
-}
-
 export function getAIInsights(): Record<string, AIInsight> {
+
   return MOCK_AI_INSIGHTS;
 }
 

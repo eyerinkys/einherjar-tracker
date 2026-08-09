@@ -10,11 +10,7 @@ const { getExerciseWorkoutHistory } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/actions/history', () => ({ getExerciseWorkoutHistory }));
-vi.mock('@/services/dataService', () => ({
-  getExerciseProgression: vi.fn(() => []),
-  getAIInsightForExercise: vi.fn(() => undefined),
-  getAchievedPRs: vi.fn(() => []),
-}));
+
 
 import { ExerciseDetailView } from './ExerciseDetailView';
 
@@ -171,7 +167,7 @@ describe('factual per-exercise history', () => {
           targetSets: 2,
           targetRepMin: 8,
           targetRepMax: 10,
-          notes: null,
+          notes: undefined,
           sets: [
             { id: id('set1'), setNumber: 1, weight: 80, reps: 8 },
             { id: id('set2'), setNumber: 2, weight: 80, reps: 8 },
@@ -188,7 +184,7 @@ describe('factual per-exercise history', () => {
           targetSets: 2,
           targetRepMin: 8,
           targetRepMax: 10,
-          notes: null,
+          notes: undefined,
           sets: [
             { id: id('set3'), setNumber: 1, weight: 80, reps: 10 },
             { id: id('set4'), setNumber: 2, weight: 80, reps: 10 },
