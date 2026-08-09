@@ -44,6 +44,7 @@ vi.mock('@/actions/split', () => ({
   reorderSplitExercises: vi.fn(),
   updateSplitExercise: vi.fn(),
 }));
+vi.mock('@/actions/analytics', () => ({ getAnalyticsOverview: vi.fn() }));
 
 import Home from './page';
 

@@ -18,6 +18,7 @@ vi.mock('@/actions/split', () => ({
 vi.mock('@/actions/workouts', () => ({
   completeWorkout: vi.fn(), discardWorkout: vi.fn(), saveWorkoutDraft: vi.fn(), startWorkout: vi.fn(),
 }));
+vi.mock('@/actions/analytics', () => ({ getAnalyticsOverview: vi.fn() }));
 vi.mock('@/services/dataService', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/services/dataService')>(),
   getWorkoutHistory,

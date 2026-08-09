@@ -3,8 +3,6 @@ import {
   UserTrainingProfile,
   Exercise,
   SplitDay,
-  AIInsight,
-  PersonalRecord,
   BodyweightEntry,
   ProgressPhoto,
 } from '@/types';
@@ -13,8 +11,6 @@ import {
   MOCK_USER_PROFILE,
   MOCK_EXERCISES,
   INITIAL_SPLIT_DAYS,
-  MOCK_AI_INSIGHTS,
-  MOCK_ACHIEVED_PRS,
   MOCK_BODYWEIGHT_LOGS,
   MOCK_PROGRESS_PHOTOS,
 } from '@/data/mock';
@@ -41,19 +37,6 @@ export function getExercises(): Exercise[] {
 
 export function getSplitDays(): SplitDay[] {
   return INITIAL_SPLIT_DAYS;
-}
-
-export function getAIInsights(): Record<string, AIInsight> {
-
-  return MOCK_AI_INSIGHTS;
-}
-
-export function getAIInsightForExercise(exerciseId: string): AIInsight | undefined {
-  return MOCK_AI_INSIGHTS[exerciseId];
-}
-
-export function getAchievedPRs(): PersonalRecord[] {
-  return MOCK_ACHIEVED_PRS;
 }
 
 export function getBodyweightLogs(): BodyweightEntry[] {
