@@ -41,14 +41,15 @@ export function AuthForm({ mode }: AuthFormProps) {
             ? 'Unable to create the account. Check your details or contact the account owner.'
             : 'Unable to sign in. Check your credentials and try again.'
         );
+        setIsSubmitting(false);
         return;
       }
 
+      // Success: keep isSubmitting true so the spinner stays visible during redirect
       router.replace('/');
       router.refresh();
     } catch {
       setError('The authentication service is unavailable. Please try again.');
-    } finally {
       setIsSubmitting(false);
     }
   }
@@ -67,8 +68,9 @@ export function AuthForm({ mode }: AuthFormProps) {
             autoComplete="name"
             required
             maxLength={80}
+            disabled={isSubmitting}
             aria-invalid={error ? true : undefined}
-            className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#161A20] px-3 py-2 text-base text-[#F0E6D6] caret-[#C9A96E] transition-colors placeholder:text-[#948979] hover:border-[#8DAA91] focus:border-[#8DAA91]"
+            className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#161A20] px-3 py-2 text-base text-[#F0E6D6] caret-[#C9A96E] transition-colors placeholder:text-[#948979] hover:border-[#8DAA91] focus:border-[#8DAA91] disabled:opacity-50"
             placeholder="Your name"
           />
         </div>
@@ -86,8 +88,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           autoComplete="email"
           required
           maxLength={254}
+          disabled={isSubmitting}
           aria-invalid={error ? true : undefined}
-          className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#161A20] px-3 py-2 text-base text-[#F0E6D6] caret-[#C9A96E] transition-colors placeholder:text-[#948979] hover:border-[#8DAA91] focus:border-[#8DAA91]"
+          className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#161A20] px-3 py-2 text-base text-[#F0E6D6] caret-[#C9A96E] transition-colors placeholder:text-[#948979] hover:border-[#8DAA91] focus:border-[#8DAA91] disabled:opacity-50"
           placeholder="you@example.com"
         />
       </div>
@@ -104,8 +107,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           required
           minLength={isSignUp ? 12 : undefined}
           maxLength={128}
+          disabled={isSubmitting}
           aria-invalid={error ? true : undefined}
-          className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#161A20] px-3 py-2 text-base text-[#F0E6D6] caret-[#C9A96E] transition-colors placeholder:text-[#948979] hover:border-[#8DAA91] focus:border-[#8DAA91]"
+          className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#161A20] px-3 py-2 text-base text-[#F0E6D6] caret-[#C9A96E] transition-colors placeholder:text-[#948979] hover:border-[#8DAA91] focus:border-[#8DAA91] disabled:opacity-50"
           placeholder={isSignUp ? 'At least 12 characters' : 'Your password'}
         />
       </div>
@@ -117,11 +121,17 @@ export function AuthForm({ mode }: AuthFormProps) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#40534C] px-4 py-2.5 font-mono text-sm font-bold uppercase tracking-widest text-[#F0E6D6] transition-colors hover:bg-[#4E665C] disabled:cursor-wait disabled:opacity-60"
+        className="min-h-11 w-full rounded-xs border border-[#677D6A] bg-[#40534C] px-4 py-2.5 font-mono text-sm font-bold uppercase tracking-widest text-[#F0E6D6] transition-colors hover:bg-[#4E665C] disabled:cursor-wait disabled:opacity-75"
       >
         <span className="inline-flex items-center justify-center gap-2">
-          {isSubmitting ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : null}
-          {isSubmitting ? 'Please wait' : isSignUp ? 'Create account' : 'Enter ledger'}
+          {isSubmitting ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin text-[#DFD0B8]" /> : null}
+          {isSubmitting
+            ? isSignUp
+              ? 'Creating account...'
+              : 'Opening ledger...'
+            : isSignUp
+              ? 'Create account'
+              : 'Enter ledger'}
         </span>
       </button>
 

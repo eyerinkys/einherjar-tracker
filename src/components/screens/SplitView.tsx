@@ -6,7 +6,7 @@ import { Exercise, SplitDay, SplitExercise } from '@/types';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { RuneStave } from '@/components/ui/RuneStave';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Plus, Trash2, ChevronUp, ChevronDown, Edit2, Check, X, Layers } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, Edit2, Check, X, Layers, LoaderCircle } from 'lucide-react';
 import {
   addSplitExercise,
   createSplitDay,
@@ -101,7 +101,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedAddExerciseId, setSelectedAddExerciseId] = useState<string>(availableExercises[0]?.id || '');
-  
+
   // Custom exercise state
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [customName, setCustomName] = useState('');
@@ -192,10 +192,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
     exerciseDraftState.source === splitDays
       ? exerciseDraftState.drafts
       : reconciledExerciseDrafts(
-          splitDays,
-          exerciseDraftState.drafts,
-          exerciseDraftState.dirtyIds,
-        );
+        splitDays,
+        exerciseDraftState.drafts,
+        exerciseDraftState.dirtyIds,
+      );
   const [exerciseErrors, setExerciseErrors] = useState<Record<string, string>>({});
   const retryOperation = useRef<(() => Promise<void>) | null>(null);
   const mutationPending = useRef(false);
@@ -758,11 +758,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
               ref={(node) => {
                 dayTabRefs.current[day.id] = node;
               }}
-              className={`min-h-11 px-4 py-2.5 rounded-xs font-mono text-xs tracking-wider whitespace-nowrap transition-all border ${
-                isActive
+              className={`min-h-11 px-4 py-2.5 rounded-xs font-mono text-xs tracking-wider whitespace-nowrap transition-all border ${isActive
                   ? 'bg-[#222831] border-[#677D6A] text-[#DFD0B8] shadow-[0_2px_12px_rgba(103,125,106,0.2)] font-bold'
                   : 'bg-[#1C2128] border-[#393E46] text-[#948979] hover:border-[#4D5460] hover:text-[#DFD0B8]'
-              }`}
+                }`}
               role="tab"
               tabIndex={isActive ? 0 : -1}
               type="button"
@@ -794,334 +793,334 @@ export const SplitView: React.FC<SplitViewProps> = ({
           id={`${localExerciseIdPrefix}-day-panel`}
           role="tabpanel"
         >
-        <RunePanel variant="carved" className="p-4 sm:p-6 space-y-6">
-          {/* Day Name Header & Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#393E46]">
-            <div>
-              <div className="text-[11px] font-mono text-[#948979] uppercase tracking-widest flex items-center gap-1.5 mb-1">
-                <span className="w-1.5 h-1.5 rotate-45 bg-[#677D6A]" />
-                <span>WORKOUT DAY STRUCTURE</span>
-              </div>
-              {editingDayId === currentDay.id ? (
-                <div className="grid grid-cols-[minmax(0,1fr)_2.75rem_2.75rem] gap-2 mt-1">
-                  <input
-                    aria-describedby={renameError ? `${localExerciseIdPrefix}-rename-error` : undefined}
-                    aria-invalid={renameError ? true : undefined}
-                    aria-label="Rename day name"
-                    type="text"
-                    value={dayNameInput}
-                    onChange={(e) => {
-                      setDayNameInput(e.target.value);
-                      setRenameError(null);
-                    }}
-                    className="min-h-11 min-w-0 w-full bg-[#161A20] border border-[#677D6A] px-3 font-mono text-base text-[#DFD0B8] rounded-xs focus:outline-none"
-                    disabled={isPending}
-                    maxLength={100}
-                    autoFocus
-                  />
-                  <button
-                    aria-label="Save rename"
-                    onClick={handleSaveRename}
-                    className="min-h-11 min-w-11 inline-flex items-center justify-center bg-[#677D6A] text-[#1A3636] rounded-xs hover:bg-[#8DAA91]"
-                    disabled={isPending}
-                    type="button"
-                  >
-                    <Check className="w-4 h-4 stroke-[3]" />
-                  </button>
-                  <button
-                    aria-label="Cancel rename"
-                    onClick={() => {
-                      pendingFocus.current = { kind: 'renameDay' };
-                      setEditingDayId(null);
-                    }}
-                    className="min-h-11 min-w-11 inline-flex items-center justify-center bg-[#393E46] text-[#DFD0B8] rounded-xs hover:bg-[#4D5460]"
-                    disabled={isPending}
-                    type="button"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                  {renameError ? (
-                    <span
-                      className="col-span-full text-xs text-[#D6A0A0]"
-                      id={`${localExerciseIdPrefix}-rename-error`}
-                      role="alert"
+          <RunePanel variant="carved" className="p-4 sm:p-6 space-y-6">
+            {/* Day Name Header & Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#393E46]">
+              <div>
+                <div className="text-[11px] font-mono text-[#948979] uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                  <span className="w-1.5 h-1.5 rotate-45 bg-[#677D6A]" />
+                  <span>WORKOUT DAY STRUCTURE</span>
+                </div>
+                {editingDayId === currentDay.id ? (
+                  <div className="grid grid-cols-[minmax(0,1fr)_2.75rem_2.75rem] gap-2 mt-1">
+                    <input
+                      aria-describedby={renameError ? `${localExerciseIdPrefix}-rename-error` : undefined}
+                      aria-invalid={renameError ? true : undefined}
+                      aria-label="Rename day name"
+                      type="text"
+                      value={dayNameInput}
+                      onChange={(e) => {
+                        setDayNameInput(e.target.value);
+                        setRenameError(null);
+                      }}
+                      className="min-h-11 min-w-0 w-full bg-[#161A20] border border-[#677D6A] px-3 font-mono text-base text-[#DFD0B8] rounded-xs focus:outline-none"
+                      disabled={isPending}
+                      maxLength={100}
+                      autoFocus
+                    />
+                    <button
+                      aria-label="Save rename"
+                      onClick={handleSaveRename}
+                      className="min-h-11 min-w-11 inline-flex items-center justify-center bg-[#677D6A] text-[#1A3636] rounded-xs hover:bg-[#8DAA91]"
+                      disabled={isPending}
+                      type="button"
                     >
-                      {renameError}
-                    </span>
-                  ) : null}
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </button>
+                    <button
+                      aria-label="Cancel rename"
+                      onClick={() => {
+                        pendingFocus.current = { kind: 'renameDay' };
+                        setEditingDayId(null);
+                      }}
+                      className="min-h-11 min-w-11 inline-flex items-center justify-center bg-[#393E46] text-[#DFD0B8] rounded-xs hover:bg-[#4D5460]"
+                      disabled={isPending}
+                      type="button"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    {renameError ? (
+                      <span
+                        className="col-span-full text-xs text-[#D6A0A0]"
+                        id={`${localExerciseIdPrefix}-rename-error`}
+                        role="alert"
+                      >
+                        {renameError}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="font-mono text-lg font-bold text-[#DFD0B8]">{currentDay.name}</h2>
+                    <button
+                      aria-label={`Move ${currentDay.name} up`}
+                      className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30"
+                      disabled={isPending || currentDayIndex === 0}
+                      onClick={() => handleMoveDay('up')}
+                      type="button"
+                    >
+                      <ChevronUp aria-hidden="true" className="w-4 h-4" />
+                    </button>
+                    <button
+                      aria-label={`Move ${currentDay.name} down`}
+                      className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30"
+                      disabled={isPending || currentDayIndex === splitDays.length - 1}
+                      onClick={() => handleMoveDay('down')}
+                      type="button"
+                    >
+                      <ChevronDown aria-hidden="true" className="w-4 h-4" />
+                    </button>
+                    <button
+                      aria-label="Rename Day"
+                      onClick={handleStartRename}
+                      className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] transition-colors"
+                      disabled={isPending}
+                      ref={renameDayButtonRef}
+                      title="Rename Day"
+                      type="button"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      aria-label={`Delete ${currentDay.name}`}
+                      className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#B88989] transition-colors"
+                      disabled={isPending}
+                      onClick={() => setConfirmingDayId(currentDay.id)}
+                      ref={deleteDayButtonRef}
+                      type="button"
+                    >
+                      <Trash2 aria-hidden="true" className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                className="min-h-11 flex items-center justify-center gap-2 px-4 py-2 bg-[#40534C] hover:bg-[#677D6A] text-[#DFD0B8] font-mono text-xs uppercase tracking-wider rounded-xs border border-[#677D6A] transition-all"
+                disabled={isPending}
+                onClick={openAddExercise}
+                ref={addExerciseButtonRef}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="w-4 h-4" />
+                <span>Add Exercise</span>
+              </button>
+            </div>
+
+            {confirmingDayId === currentDay.id ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 border border-[#5A383B] bg-[#2D1F20] p-3 font-mono text-xs">
+                <div>
+                  <p className="font-bold text-[#D6A0A0]">Delete {currentDay.name}?</p>
+                  <p className="mt-1 text-[#948979]">Its configured exercises will also be removed.</p>
                 </div>
+                <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
+                  <button
+                    className="min-h-11 px-4 border border-[#4D5460] text-[#DFD0B8] uppercase"
+                    disabled={isPending}
+                    onClick={() => {
+                      pendingFocus.current = { kind: 'deleteDay' };
+                      setConfirmingDayId(null);
+                    }}
+                    type="button"
+                  >
+                    Cancel deletion
+                  </button>
+                  <button
+                    className="min-h-11 px-4 border border-[#B88989] bg-[#5A383B] text-[#DFD0B8] uppercase"
+                    disabled={isPending}
+                    onClick={handleDeleteDay}
+                    type="button"
+                  >
+                    Confirm delete day
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Exercise Stave List */}
+            <div className="space-y-4">
+              {currentDay.exercises.length === 0 ? (
+                <EmptyState
+                  title="No Exercises Configured"
+                  description="This workout day has no exercises assigned yet. Click 'Add Exercise' above to include movements."
+                  actionLabel="Add First Exercise"
+                  disabled={isPending}
+                  onAction={openAddExercise}
+                />
               ) : (
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="font-mono text-lg font-bold text-[#DFD0B8]">{currentDay.name}</h2>
-                  <button
-                    aria-label={`Move ${currentDay.name} up`}
-                    className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30"
-                    disabled={isPending || currentDayIndex === 0}
-                    onClick={() => handleMoveDay('up')}
-                    type="button"
-                  >
-                    <ChevronUp aria-hidden="true" className="w-4 h-4" />
-                  </button>
-                  <button
-                    aria-label={`Move ${currentDay.name} down`}
-                    className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30"
-                    disabled={isPending || currentDayIndex === splitDays.length - 1}
-                    onClick={() => handleMoveDay('down')}
-                    type="button"
-                  >
-                    <ChevronDown aria-hidden="true" className="w-4 h-4" />
-                  </button>
-                  <button
-                    aria-label="Rename Day"
-                    onClick={handleStartRename}
-                    className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] transition-colors"
-                    disabled={isPending}
-                    ref={renameDayButtonRef}
-                    title="Rename Day"
-                    type="button"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    aria-label={`Delete ${currentDay.name}`}
-                    className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#B88989] transition-colors"
-                    disabled={isPending}
-                    onClick={() => setConfirmingDayId(currentDay.id)}
-                    ref={deleteDayButtonRef}
-                    type="button"
-                  >
-                    <Trash2 aria-hidden="true" className="w-4 h-4" />
-                  </button>
-                </div>
+                currentDay.exercises.map((ex, idx) => {
+                  const draft = exerciseDrafts[ex.id] ?? exerciseDraft(ex);
+                  const exerciseError = exerciseErrors[ex.id];
+                  const exerciseErrorId = `${localExerciseIdPrefix}-${ex.id}-error`;
+
+                  return (
+                    <RuneStave key={ex.id} active={true}>
+                      <div className="bg-[#1C2128] border border-[#393E46] p-3.5 rounded-xs space-y-3 hover:border-[#4D5460] transition-colors">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-mono text-xs text-[#948979] font-bold">
+                                {(idx + 1).toString().padStart(2, '0')}
+                              </span>
+                              <h3 className="font-mono text-sm font-bold text-[#DFD0B8]">{ex.exerciseName}</h3>
+                              <span className="text-[10px] font-mono px-2 py-0.5 bg-[#222831] border border-[#393E46] text-[#948979]">
+                                {ex.muscleGroup}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Reorder and Delete Actions */}
+                          <div className="flex items-center gap-1 self-end sm:self-auto">
+                            <button
+                              aria-label={`Move ${ex.exerciseName} up`}
+                              onClick={() => handleMoveExercise(ex.id, 'up')}
+                              disabled={isPending || idx === 0}
+                              className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30 disabled:pointer-events-none"
+                              title={`Move ${ex.exerciseName} up`}
+                              type="button"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </button>
+                            <button
+                              aria-label={`Move ${ex.exerciseName} down`}
+                              onClick={() => handleMoveExercise(ex.id, 'down')}
+                              disabled={isPending || idx === currentDay.exercises.length - 1}
+                              className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30 disabled:pointer-events-none"
+                              title={`Move ${ex.exerciseName} down`}
+                              type="button"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            <button
+                              aria-label={`Remove ${ex.exerciseName}`}
+                              onClick={() => setConfirmingExerciseId(ex.id)}
+                              className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#B88989] transition-colors ml-1"
+                              disabled={isPending}
+                              title={`Remove ${ex.exerciseName}`}
+                              ref={(button) => {
+                                removeExerciseButtonRefs.current[ex.id] = button;
+                              }}
+                              type="button"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {confirmingExerciseId === ex.id ? (
+                          <div className="flex flex-wrap items-center justify-between gap-3 border border-[#5A383B] bg-[#2D1F20] p-3 font-mono text-xs">
+                            <span className="font-bold text-[#D6A0A0]">Remove {ex.exerciseName}?</span>
+                            <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
+                              <button
+                                className="min-h-11 px-4 border border-[#4D5460] text-[#DFD0B8]"
+                                disabled={isPending}
+                                onClick={() => {
+                                  pendingFocus.current = { kind: 'removeExercise', id: ex.id };
+                                  setConfirmingExerciseId(null);
+                                }}
+                                type="button"
+                              >
+                                Cancel removal
+                              </button>
+                              <button
+                                className="min-h-11 px-4 border border-[#B88989] bg-[#5A383B] text-[#DFD0B8]"
+                                disabled={isPending}
+                                onClick={() => handleRemoveExercise(ex.id)}
+                                type="button"
+                              >
+                                Confirm remove {ex.exerciseName}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div className="grid gap-3 pt-3 border-t border-[#2A303A] font-mono text-xs text-[#DFD0B8] sm:grid-cols-3">
+                          <label className="space-y-1 text-[#948979]">
+                            <span className="block">Target sets</span>
+                            <input
+                              aria-describedby={exerciseError ? exerciseErrorId : undefined}
+                              aria-invalid={exerciseError ? true : undefined}
+                              aria-label={`${ex.exerciseName} target sets`}
+                              className="min-h-11 w-full bg-[#222831] border border-[#393E46] px-3 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
+                              disabled={isPending}
+                              max={20}
+                              min={1}
+                              onChange={(event) => updateExerciseDraft(ex, { targetSets: event.target.value })}
+                              type="number"
+                              value={draft.targetSets}
+                            />
+                          </label>
+                          <label className="space-y-1 text-[#948979]">
+                            <span className="block">Minimum reps</span>
+                            <input
+                              aria-describedby={exerciseError ? exerciseErrorId : undefined}
+                              aria-invalid={exerciseError ? true : undefined}
+                              aria-label={`${ex.exerciseName} minimum reps`}
+                              className="min-h-11 w-full bg-[#222831] border border-[#393E46] px-3 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
+                              disabled={isPending}
+                              max={100}
+                              min={1}
+                              onChange={(event) => updateExerciseDraft(ex, { targetRepMin: event.target.value })}
+                              type="number"
+                              value={draft.targetRepMin}
+                            />
+                          </label>
+                          <label className="space-y-1 text-[#948979]">
+                            <span className="block">Maximum reps</span>
+                            <input
+                              aria-describedby={exerciseError ? exerciseErrorId : undefined}
+                              aria-invalid={exerciseError ? true : undefined}
+                              aria-label={`${ex.exerciseName} maximum reps`}
+                              className="min-h-11 w-full bg-[#222831] border border-[#393E46] px-3 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
+                              disabled={isPending}
+                              max={100}
+                              min={1}
+                              onChange={(event) => updateExerciseDraft(ex, { targetRepMax: event.target.value })}
+                              type="number"
+                              value={draft.targetRepMax}
+                            />
+                          </label>
+                          <label className="space-y-1 text-[#948979] sm:col-span-3">
+                            <span className="block">Notes</span>
+                            <textarea
+                              aria-describedby={exerciseError ? exerciseErrorId : undefined}
+                              aria-invalid={exerciseError ? true : undefined}
+                              aria-label={`${ex.exerciseName} notes`}
+                              className="min-h-20 w-full resize-y bg-[#222831] border border-[#393E46] px-3 py-2 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
+                              disabled={isPending}
+                              maxLength={1_000}
+                              onChange={(event) => updateExerciseDraft(ex, { notes: event.target.value })}
+                              value={draft.notes}
+                            />
+                          </label>
+                          {exerciseError ? (
+                            <p
+                              className="text-[#D6A0A0] sm:col-span-2"
+                              id={exerciseErrorId}
+                              role="alert"
+                            >
+                              {exerciseError}
+                            </p>
+                          ) : (
+                            <span className="sm:col-span-2" />
+                          )}
+                          <button
+                            aria-label={`Save ${ex.exerciseName} targets`}
+                            className="min-h-11 justify-self-stretch bg-[#40534C] border border-[#677D6A] px-4 text-[#DFD0B8] font-bold uppercase rounded-xs hover:bg-[#677D6A] disabled:opacity-60 sm:justify-self-end"
+                            disabled={isPending}
+                            onClick={() => handleSaveExercise(ex)}
+                            type="button"
+                          >
+                            {isPending ? 'Saving…' : 'Save targets'}
+                          </button>
+                        </div>
+                      </div>
+                    </RuneStave>
+                  );
+                })
               )}
             </div>
-
-            <button
-              className="min-h-11 flex items-center justify-center gap-2 px-4 py-2 bg-[#40534C] hover:bg-[#677D6A] text-[#DFD0B8] font-mono text-xs uppercase tracking-wider rounded-xs border border-[#677D6A] transition-all"
-              disabled={isPending}
-              onClick={openAddExercise}
-              ref={addExerciseButtonRef}
-              type="button"
-            >
-              <Plus aria-hidden="true" className="w-4 h-4" />
-              <span>Add Exercise</span>
-            </button>
-          </div>
-
-          {confirmingDayId === currentDay.id ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 border border-[#5A383B] bg-[#2D1F20] p-3 font-mono text-xs">
-              <div>
-                <p className="font-bold text-[#D6A0A0]">Delete {currentDay.name}?</p>
-                <p className="mt-1 text-[#948979]">Its configured exercises will also be removed.</p>
-              </div>
-              <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
-                <button
-                  className="min-h-11 px-4 border border-[#4D5460] text-[#DFD0B8] uppercase"
-                  disabled={isPending}
-                  onClick={() => {
-                    pendingFocus.current = { kind: 'deleteDay' };
-                    setConfirmingDayId(null);
-                  }}
-                  type="button"
-                >
-                  Cancel deletion
-                </button>
-                <button
-                  className="min-h-11 px-4 border border-[#B88989] bg-[#5A383B] text-[#DFD0B8] uppercase"
-                  disabled={isPending}
-                  onClick={handleDeleteDay}
-                  type="button"
-                >
-                  Confirm delete day
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {/* Exercise Stave List */}
-          <div className="space-y-4">
-            {currentDay.exercises.length === 0 ? (
-              <EmptyState
-                title="No Exercises Configured"
-                description="This workout day has no exercises assigned yet. Click 'Add Exercise' above to include movements."
-                actionLabel="Add First Exercise"
-                disabled={isPending}
-                onAction={openAddExercise}
-              />
-            ) : (
-              currentDay.exercises.map((ex, idx) => {
-                const draft = exerciseDrafts[ex.id] ?? exerciseDraft(ex);
-                const exerciseError = exerciseErrors[ex.id];
-                const exerciseErrorId = `${localExerciseIdPrefix}-${ex.id}-error`;
-
-                return (
-                <RuneStave key={ex.id} active={true}>
-                  <div className="bg-[#1C2128] border border-[#393E46] p-3.5 rounded-xs space-y-3 hover:border-[#4D5460] transition-colors">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs text-[#948979] font-bold">
-                            {(idx + 1).toString().padStart(2, '0')}
-                          </span>
-                          <h3 className="font-mono text-sm font-bold text-[#DFD0B8]">{ex.exerciseName}</h3>
-                          <span className="text-[10px] font-mono px-2 py-0.5 bg-[#222831] border border-[#393E46] text-[#948979]">
-                            {ex.muscleGroup}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Reorder and Delete Actions */}
-                      <div className="flex items-center gap-1 self-end sm:self-auto">
-                        <button
-                          aria-label={`Move ${ex.exerciseName} up`}
-                          onClick={() => handleMoveExercise(ex.id, 'up')}
-                          disabled={isPending || idx === 0}
-                          className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30 disabled:pointer-events-none"
-                          title={`Move ${ex.exerciseName} up`}
-                          type="button"
-                        >
-                          <ChevronUp className="w-4 h-4" />
-                        </button>
-                        <button
-                          aria-label={`Move ${ex.exerciseName} down`}
-                          onClick={() => handleMoveExercise(ex.id, 'down')}
-                          disabled={isPending || idx === currentDay.exercises.length - 1}
-                          className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#DFD0B8] disabled:opacity-30 disabled:pointer-events-none"
-                          title={`Move ${ex.exerciseName} down`}
-                          type="button"
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </button>
-                        <button
-                          aria-label={`Remove ${ex.exerciseName}`}
-                          onClick={() => setConfirmingExerciseId(ex.id)}
-                          className="min-h-11 min-w-11 inline-flex items-center justify-center text-[#948979] hover:text-[#B88989] transition-colors ml-1"
-                          disabled={isPending}
-                          title={`Remove ${ex.exerciseName}`}
-                          ref={(button) => {
-                            removeExerciseButtonRefs.current[ex.id] = button;
-                          }}
-                          type="button"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {confirmingExerciseId === ex.id ? (
-                      <div className="flex flex-wrap items-center justify-between gap-3 border border-[#5A383B] bg-[#2D1F20] p-3 font-mono text-xs">
-                        <span className="font-bold text-[#D6A0A0]">Remove {ex.exerciseName}?</span>
-                        <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
-                          <button
-                            className="min-h-11 px-4 border border-[#4D5460] text-[#DFD0B8]"
-                            disabled={isPending}
-                            onClick={() => {
-                              pendingFocus.current = { kind: 'removeExercise', id: ex.id };
-                              setConfirmingExerciseId(null);
-                            }}
-                            type="button"
-                          >
-                            Cancel removal
-                          </button>
-                          <button
-                            className="min-h-11 px-4 border border-[#B88989] bg-[#5A383B] text-[#DFD0B8]"
-                            disabled={isPending}
-                            onClick={() => handleRemoveExercise(ex.id)}
-                            type="button"
-                          >
-                            Confirm remove {ex.exerciseName}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="grid gap-3 pt-3 border-t border-[#2A303A] font-mono text-xs text-[#DFD0B8] sm:grid-cols-3">
-                      <label className="space-y-1 text-[#948979]">
-                        <span className="block">Target sets</span>
-                        <input
-                          aria-describedby={exerciseError ? exerciseErrorId : undefined}
-                          aria-invalid={exerciseError ? true : undefined}
-                          aria-label={`${ex.exerciseName} target sets`}
-                          className="min-h-11 w-full bg-[#222831] border border-[#393E46] px-3 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
-                          disabled={isPending}
-                          max={20}
-                          min={1}
-                          onChange={(event) => updateExerciseDraft(ex, { targetSets: event.target.value })}
-                          type="number"
-                          value={draft.targetSets}
-                        />
-                      </label>
-                      <label className="space-y-1 text-[#948979]">
-                        <span className="block">Minimum reps</span>
-                        <input
-                          aria-describedby={exerciseError ? exerciseErrorId : undefined}
-                          aria-invalid={exerciseError ? true : undefined}
-                          aria-label={`${ex.exerciseName} minimum reps`}
-                          className="min-h-11 w-full bg-[#222831] border border-[#393E46] px-3 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
-                          disabled={isPending}
-                          max={100}
-                          min={1}
-                          onChange={(event) => updateExerciseDraft(ex, { targetRepMin: event.target.value })}
-                          type="number"
-                          value={draft.targetRepMin}
-                        />
-                      </label>
-                      <label className="space-y-1 text-[#948979]">
-                        <span className="block">Maximum reps</span>
-                        <input
-                          aria-describedby={exerciseError ? exerciseErrorId : undefined}
-                          aria-invalid={exerciseError ? true : undefined}
-                          aria-label={`${ex.exerciseName} maximum reps`}
-                          className="min-h-11 w-full bg-[#222831] border border-[#393E46] px-3 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
-                          disabled={isPending}
-                          max={100}
-                          min={1}
-                          onChange={(event) => updateExerciseDraft(ex, { targetRepMax: event.target.value })}
-                          type="number"
-                          value={draft.targetRepMax}
-                        />
-                      </label>
-                      <label className="space-y-1 text-[#948979] sm:col-span-3">
-                        <span className="block">Notes</span>
-                        <textarea
-                          aria-describedby={exerciseError ? exerciseErrorId : undefined}
-                          aria-invalid={exerciseError ? true : undefined}
-                          aria-label={`${ex.exerciseName} notes`}
-                          className="min-h-20 w-full resize-y bg-[#222831] border border-[#393E46] px-3 py-2 text-base text-[#DFD0B8] rounded-xs focus:outline-none focus:border-[#677D6A]"
-                          disabled={isPending}
-                          maxLength={1_000}
-                          onChange={(event) => updateExerciseDraft(ex, { notes: event.target.value })}
-                          value={draft.notes}
-                        />
-                      </label>
-                      {exerciseError ? (
-                        <p
-                          className="text-[#D6A0A0] sm:col-span-2"
-                          id={exerciseErrorId}
-                          role="alert"
-                        >
-                          {exerciseError}
-                        </p>
-                      ) : (
-                        <span className="sm:col-span-2" />
-                      )}
-                      <button
-                        aria-label={`Save ${ex.exerciseName} targets`}
-                        className="min-h-11 justify-self-stretch bg-[#40534C] border border-[#677D6A] px-4 text-[#DFD0B8] font-bold uppercase rounded-xs hover:bg-[#677D6A] disabled:opacity-60 sm:justify-self-end"
-                        disabled={isPending}
-                        onClick={() => handleSaveExercise(ex)}
-                        type="button"
-                      >
-                        {isPending ? 'Saving…' : 'Save targets'}
-                      </button>
-                    </div>
-                  </div>
-                </RuneStave>
-                );
-              })
-            )}
-          </div>
-        </RunePanel>
+          </RunePanel>
         </div>
       )}
 
@@ -1340,20 +1339,28 @@ export const SplitView: React.FC<SplitViewProps> = ({
               {isCreatingCustom ? (
                 <button
                   onClick={handleCreateCustomExercise}
-                  className="min-h-11 px-4 bg-[#40534C] border border-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A] disabled:opacity-50"
+                  className="min-h-11 px-4 bg-[#40534C] border border-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A] disabled:opacity-50 flex items-center justify-center gap-2"
                   disabled={isPending || isSubmittingCustom}
                   type="button"
                 >
-                  {isSubmittingCustom ? 'Creating...' : 'Create & Add to Day'}
+                  {(isPending || isSubmittingCustom) && (
+                    <LoaderCircle aria-hidden="true" className="w-4 h-4 animate-spin text-[#DFD0B8]" />
+                  )}
+                  <span>
+                    {isSubmittingCustom || isPending ? 'Creating & Adding...' : 'Create & Add to Day'}
+                  </span>
                 </button>
               ) : (
                 <button
                   onClick={handleAddExercise}
-                  className="min-h-11 px-4 bg-[#40534C] border border-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A] disabled:opacity-50"
+                  className="min-h-11 px-4 bg-[#40534C] border border-[#677D6A] text-[#DFD0B8] font-mono text-xs font-bold rounded-xs hover:bg-[#677D6A] disabled:opacity-50 flex items-center justify-center gap-2"
                   disabled={isPending || isSubmittingCustom}
                   type="button"
                 >
-                  Add to Day
+                  {isPending && (
+                    <LoaderCircle aria-hidden="true" className="w-4 h-4 animate-spin text-[#DFD0B8]" />
+                  )}
+                  <span>{isPending ? 'Adding to Day...' : 'Add to Day'}</span>
                 </button>
               )}
             </div>

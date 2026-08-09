@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { InsightEye } from '@/components/ui/InsightEye';
 import { authClient } from '@/lib/auth-client';
-import { LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import { LogOut, User as UserIcon, ChevronDown, LoaderCircle } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
@@ -49,6 +49,7 @@ export function Header({ activeTab, user }: HeaderProps) {
 
       if (result.error) {
         setSignOutError('Sign out failed. Try again.');
+        setIsSigningOut(false);
         return;
       }
 
@@ -56,7 +57,6 @@ export function Header({ activeTab, user }: HeaderProps) {
       router.refresh();
     } catch {
       setSignOutError('Sign out failed. Try again.');
-    } finally {
       setIsSigningOut(false);
     }
   }
@@ -169,7 +169,11 @@ export function Header({ activeTab, user }: HeaderProps) {
                 className="w-full flex items-center justify-center gap-2 rounded-xs border border-[#4D5460] bg-[#222831] hover:bg-[#8F5F5F]/20 hover:border-[#8F5F5F] hover:text-[#E6A8A8] py-2 px-3 text-xs uppercase tracking-wider text-[#C4B8A5] transition-all disabled:cursor-wait disabled:opacity-60"
                 aria-label={isSigningOut ? 'Signing out' : 'Sign out'}
               >
-                <LogOut aria-hidden="true" className="w-4 h-4" />
+                {isSigningOut ? (
+                  <LoaderCircle aria-hidden="true" className="w-4 h-4 animate-spin text-[#DFD0B8]" />
+                ) : (
+                  <LogOut aria-hidden="true" className="w-4 h-4" />
+                )}
                 <span>{isSigningOut ? 'Leaving...' : 'Sign out'}</span>
               </button>
             </div>

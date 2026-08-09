@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { completeWorkout, discardWorkout, saveWorkoutDraft, startWorkout } from '@/actions/workouts';
 import type { ActionResult } from '@/server/action-result';
 import type { ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, SplitDay } from '@/types';
-import { CheckCircle2, Play, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { CheckCircle2, LoaderCircle, Play, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { RunePanel } from '@/components/ui/RunePanel';
 import { SetEntry } from '@/components/ui/SetEntry';
@@ -23,6 +23,7 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
   const [draftState, setDraftState] = useState({ source: activeWorkout, value: activeWorkout });
   const workout = draftState.source === activeWorkout ? draftState.value : activeWorkout;
   const [pending, setPending] = useState(false);
+  const [activeAction, setActiveAction] = useState<'start' | 'save' | 'finish' | 'discard' | null>(null);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [completion, setCompletion] = useState<{ durationMinutes: number } | null>(null);
@@ -30,7 +31,11 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
     ? selectedDayId
     : (splitDays[0]?.id ?? '');
 
-  const setBusy = (value: boolean) => { setPending(value); onPendingChange(value); };
+  const setBusy = (value: boolean, action: 'start' | 'save' | 'finish' | 'discard' | null = null) => {
+    setPending(value);
+    setActiveAction(value ? action : null);
+    onPendingChange(value);
+  };
   const reconcile = (next: ActiveWorkout | null) => {
     setDraftState({ source: next, value: next });
     onWorkoutChange(next);
@@ -43,8 +48,9 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
   const commitWorkout = async <T,>(
     operation: () => Promise<ActionResult<T>>,
     onSuccess: (data: T) => void,
+    action: 'start' | 'save' | 'finish' | 'discard',
   ) => {
-    setBusy(true);
+    setBusy(true, action);
     setError(null);
     try {
       const result = await operation();
@@ -62,6 +68,7 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
     await commitWorkout(
       () => startWorkout({ splitDayId: effectiveSelectedDayId }),
       reconcile,
+      'start',
     );
   };
 
@@ -77,7 +84,7 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
 
   const save = async () => {
     const input = draftInput(); if (!input || pending) return;
-    await commitWorkout(() => saveWorkoutDraft(input), reconcile);
+    await commitWorkout(() => saveWorkoutDraft(input), reconcile, 'save');
   };
 
   const finish = async () => {
@@ -86,7 +93,7 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
       setCompletion(result);
       reconcile(null);
       router.refresh();
-    });
+    }, 'finish');
   };
 
   const discard = async () => {
@@ -97,6 +104,7 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
         setConfirmDiscard(false);
         reconcile(null);
       },
+      'discard',
     );
   };
 
@@ -124,7 +132,10 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
         {splitDays.map((day) => <option key={day.id} value={day.id}>{day.name}</option>)}
       </select>
       {error ? <div role="alert" className="font-mono text-xs text-[#D99B92]">{error.message}</div> : null}
-      <button type="button" onClick={start} disabled={pending} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xs border border-[#677D6A] bg-[#40534C] px-6 font-mono text-xs font-bold uppercase text-[#DFD0B8] disabled:opacity-50"><Play className="h-4 w-4" />{pending ? 'Starting…' : 'Start workout'}</button>
+      <button type="button" onClick={start} disabled={pending} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xs border border-[#677D6A] bg-[#40534C] px-6 font-mono text-xs font-bold uppercase text-[#DFD0B8] disabled:opacity-50">
+        {pending && activeAction === 'start' ? <LoaderCircle className="h-4 w-4 animate-spin text-[#DFD0B8]" /> : <Play className="h-4 w-4" />}
+        {pending && activeAction === 'start' ? 'Starting workout…' : 'Start workout'}
+      </button>
     </RunePanel>
   );
 
@@ -147,8 +158,30 @@ export function TrainView({ splitDays, activeWorkout, onWorkoutChange, onPending
       <label htmlFor="workout-notes" className="block font-mono text-xs uppercase tracking-wider text-[#948979]">Workout notes</label>
       <textarea id="workout-notes" maxLength={1000} disabled={pending} value={workout.notes} onChange={(event) => updateWorkout((current) => ({ ...current, notes: event.target.value }))} placeholder="Record energy, RPE, equipment settings, or grip adjustments…" className="h-24 w-full resize-y rounded-xs border border-[#393E46] bg-[#161A20] p-3 font-mono text-base text-[#DFD0B8] outline-none placeholder:text-[#756C60] focus:border-[#677D6A]" />
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-        {!confirmDiscard ? <button type="button" disabled={pending} onClick={() => setConfirmDiscard(true)} className="min-h-11 rounded-xs border border-[#5B4644] px-4 font-mono text-xs font-bold uppercase text-[#D99B92] disabled:opacity-50"><Trash2 className="mr-1 inline h-4 w-4" />Discard workout</button> : <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs text-[#D99B92]">Discard this draft?</span><button type="button" disabled={pending} onClick={discard} className="min-h-11 rounded-xs bg-[#7A4943] px-4 font-mono text-xs font-bold uppercase text-white">Confirm discard</button><button type="button" disabled={pending} onClick={() => setConfirmDiscard(false)} className="min-h-11 px-3 font-mono text-xs uppercase text-[#DFD0B8]">Cancel</button></div>}
-        <div className="flex flex-col gap-2 sm:flex-row"><button type="button" disabled={pending} onClick={save} className="min-h-11 rounded-xs border border-[#677D6A] px-5 font-mono text-xs font-bold uppercase text-[#DFD0B8] disabled:opacity-50"><Save className="mr-1 inline h-4 w-4" />Save draft</button><button type="button" disabled={pending || completedSets === 0} onClick={finish} className="min-h-11 rounded-xs border border-[#677D6A] bg-[#40534C] px-6 font-mono text-xs font-bold uppercase text-[#DFD0B8] disabled:opacity-50"><CheckCircle2 className="mr-1 inline h-4 w-4" />Finish workout</button></div>
+        {!confirmDiscard ? (
+          <button type="button" disabled={pending} onClick={() => setConfirmDiscard(true)} className="min-h-11 rounded-xs border border-[#5B4644] px-4 font-mono text-xs font-bold uppercase text-[#D99B92] disabled:opacity-50">
+            <Trash2 className="mr-1 inline h-4 w-4" />Discard workout
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs text-[#D99B92]">Discard this draft?</span>
+            <button type="button" disabled={pending} onClick={discard} className="min-h-11 rounded-xs bg-[#7A4943] px-4 font-mono text-xs font-bold uppercase text-white flex items-center justify-center gap-1.5 disabled:opacity-50">
+              {pending && activeAction === 'discard' ? <LoaderCircle className="h-4 w-4 animate-spin text-white" /> : null}
+              {pending && activeAction === 'discard' ? 'Discarding…' : 'Confirm discard'}
+            </button>
+            <button type="button" disabled={pending} onClick={() => setConfirmDiscard(false)} className="min-h-11 px-3 font-mono text-xs uppercase text-[#DFD0B8]">Cancel</button>
+          </div>
+        )}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button type="button" disabled={pending} onClick={save} className="min-h-11 rounded-xs border border-[#677D6A] px-5 font-mono text-xs font-bold uppercase text-[#DFD0B8] disabled:opacity-50 flex items-center justify-center gap-1.5">
+            {pending && activeAction === 'save' ? <LoaderCircle className="h-4 w-4 animate-spin text-[#DFD0B8]" /> : <Save className="h-4 w-4" />}
+            {pending && activeAction === 'save' ? 'Saving draft…' : 'Save draft'}
+          </button>
+          <button type="button" disabled={pending || completedSets === 0} onClick={finish} className="min-h-11 rounded-xs border border-[#677D6A] bg-[#40534C] px-6 font-mono text-xs font-bold uppercase text-[#DFD0B8] disabled:opacity-50 flex items-center justify-center gap-1.5">
+            {pending && activeAction === 'finish' ? <LoaderCircle className="h-4 w-4 animate-spin text-[#DFD0B8]" /> : <CheckCircle2 className="h-4 w-4" />}
+            {pending && activeAction === 'finish' ? 'Finishing…' : 'Finish workout'}
+          </button>
+        </div>
       </div>
     </RunePanel>
   </div>;
