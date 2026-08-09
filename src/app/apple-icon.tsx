@@ -23,37 +23,27 @@ export default function Icon() {
         }}
       >
         <svg
-          width="130"
-          height="130"
-          viewBox="0 0 32 32"
+          width="120"
+          height="120"
+          viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M10 4V28"
+            d="M7 3V21"
             stroke="#DFD0B8"
-            strokeWidth="2.5"
+            strokeWidth="3"
             strokeLinecap="round"
           />
           <path
-            d="M10 4L20 11L10 16L22 26"
+            d="M7 3L17 10L7 14L17 21"
             stroke="#DFD0B8"
-            strokeWidth="2.5"
+            strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <path
-            d="M10 16L22 4"
-            stroke="#DFD0B8"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M18 4L24 10 M14 9L20 15"
-            stroke="#DFD0B8"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
+          <circle cx="17" cy="10" r="2.5" fill="#DFD0B8" />
+          <circle cx="17" cy="21" r="2.5" fill="#DFD0B8" />
         </svg>
       </div>
     ),
