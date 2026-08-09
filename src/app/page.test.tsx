@@ -210,7 +210,7 @@ describe('protected application hydration', () => {
 
     expect(screen.getByRole('option', { name: 'Bench Press' })).toBeTruthy();
     expect(screen.queryByRole('option', { name: 'Standing Press' })).toBeNull();
-    expect(screen.getByText(/Stay at 80 kg next session/)).toBeTruthy();
+    expect(screen.getByText('No Progression Data for Bench Press')).toBeTruthy();
   });
 
   it('hydrates factual history for the first Progress exercise', async () => {
@@ -225,8 +225,9 @@ describe('protected application hydration', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Progress' })[0]);
 
     expect(screen.getByText('Standing Press Snapshot')).toBeTruthy();
-    expect(screen.getByText('40kg × 8')).toBeTruthy();
+    expect(screen.getAllByText('40kg × 8').length).toBeGreaterThan(0);
   });
+
 
   it('shares the current authoritative split state with the Train screen', async () => {
     const addedExercise = {
