@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import {
   exercises,
@@ -13,6 +13,7 @@ import {
 } from '../../db/schema';
 import type { ActiveWorkout } from '../../types';
 import { AuthorizationError, requireOwnedRecord, ownedWhere } from '../auth/ownership';
+import { createDrizzleHistoryReadAdapter, getPreviousPerformanceByExercise } from '../queries/history';
 import { getActiveWorkout } from '../queries/workouts';
 import type {
   CompleteWorkoutInput,
@@ -74,46 +75,6 @@ async function lockOwnedActiveWorkout(
   return workout;
 }
 
-async function latestCompletedSets(
-  tx: Transaction,
-  userId: string,
-  exerciseIds: readonly string[],
-) {
-  if (exerciseIds.length === 0) return new Map<string, Map<number, { weight: string | null; reps: number | null }>>();
-  const rows = await tx
-    .select({
-      exerciseId: sessionExercises.exerciseId,
-      workoutSessionId: workoutSessions.id,
-      completedAt: workoutSessions.completedAt,
-      setNumber: workoutSets.setNumber,
-      weight: workoutSets.weight,
-      reps: workoutSets.reps,
-    })
-    .from(sessionExercises)
-    .innerJoin(workoutSessions, eq(workoutSessions.id, sessionExercises.workoutSessionId))
-    .innerJoin(workoutSets, eq(workoutSets.sessionExerciseId, sessionExercises.id))
-    .where(and(
-      eq(workoutSessions.userId, userId),
-      eq(workoutSessions.status, 'completed'),
-      eq(workoutSets.isCompleted, true),
-      inArray(sessionExercises.exerciseId, [...exerciseIds]),
-    ))
-    .orderBy(desc(workoutSessions.completedAt), asc(workoutSets.setNumber));
-
-  const chosenSession = new Map<string, string>();
-  const result = new Map<string, Map<number, { weight: string | null; reps: number | null }>>();
-  for (const row of rows) {
-    if (row.exerciseId === null) continue;
-    const selected = chosenSession.get(row.exerciseId);
-    if (selected !== undefined && selected !== row.workoutSessionId) continue;
-    chosenSession.set(row.exerciseId, row.workoutSessionId);
-    const sets = result.get(row.exerciseId) ?? new Map();
-    sets.set(row.setNumber, { weight: row.weight, reps: row.reps });
-    result.set(row.exerciseId, sets);
-  }
-  return result;
-}
-
 export async function startWorkoutForUser(
   userId: string,
   input: StartWorkoutInput,
@@ -152,12 +113,18 @@ export async function startWorkoutForUser(
       throw new WorkoutMutationError('EMPTY_WORKOUT', 'Add at least one exercise before starting this workout.');
     }
 
-    const previous = await latestCompletedSets(tx, userId, sourceExercises.map(({ exerciseId }) => exerciseId));
     const [createdSession] = await tx.insert(workoutSessions).values({
       userId,
       sourceSplitDayId: ownedDay.id,
       splitDayName: ownedDay.name,
-    }).returning({ id: workoutSessions.id });
+    }).returning({ id: workoutSessions.id, startedAt: workoutSessions.startedAt });
+    const previous = await getPreviousPerformanceByExercise(
+      userId,
+      createdSession.id,
+      createdSession.startedAt,
+      sourceExercises.map(({ exerciseId }) => exerciseId),
+      createDrizzleHistoryReadAdapter(tx),
+    );
 
     for (const source of sourceExercises) {
       const [createdExercise] = await tx.insert(sessionExercises).values({
@@ -172,11 +139,11 @@ export async function startWorkoutForUser(
       }).returning({ id: sessionExercises.id });
       const previousSets = previous.get(source.exerciseId);
       await tx.insert(workoutSets).values(Array.from({ length: source.targetSets }, (_, index) => {
-        const prior = previousSets?.get(index + 1);
+        const prior = previousSets?.[index];
         return {
           sessionExerciseId: createdExercise.id,
           setNumber: index + 1,
-          weight: prior?.weight ?? null,
+          weight: prior === undefined ? null : String(prior.weight),
           reps: prior?.reps ?? source.targetRepMin,
           isCompleted: false,
         };

@@ -3,7 +3,8 @@ import 'server-only';
 import { and, asc, eq } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { sessionExercises, workoutSessions, workoutSets } from '../../db/schema';
-import type { ActiveWorkout } from '../../types';
+import type { ActiveWorkout, PreviousPerformanceSet } from '../../types';
+import { createDrizzleHistoryReadAdapter, getPreviousPerformanceByExercise } from './history';
 
 export interface ActiveWorkoutQueryRow {
   workoutSessionId: string;
@@ -27,7 +28,10 @@ export interface ActiveWorkoutQueryRow {
   isCompleted: boolean;
 }
 
-export function mapActiveWorkoutRows(rows: readonly ActiveWorkoutQueryRow[]): ActiveWorkout | null {
+export function mapActiveWorkoutRows(
+  rows: readonly ActiveWorkoutQueryRow[],
+  previousByExercise: ReadonlyMap<string, PreviousPerformanceSet[]> = new Map(),
+): ActiveWorkout | null {
   const first = rows[0];
   if (!first) return null;
 
@@ -52,7 +56,9 @@ export function mapActiveWorkoutRows(rows: readonly ActiveWorkoutQueryRow[]): Ac
         targetRepMin: row.targetRepMin,
         targetRepMax: row.targetRepMax,
         ...(row.exerciseNotes === null ? {} : { notes: row.exerciseNotes }),
-        previousPerformance: [],
+        previousPerformance: row.exerciseId === null
+          ? []
+          : (previousByExercise.get(row.exerciseId) ?? []),
         sets: [],
       };
       result.exercises.push(exercise);
@@ -101,5 +107,15 @@ export async function getActiveWorkout(
     .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.status, 'in_progress')))
     .orderBy(asc(sessionExercises.sortOrder), asc(sessionExercises.id), asc(workoutSets.setNumber));
 
-  return mapActiveWorkoutRows(rows);
+  const first = rows[0];
+  if (!first) return null;
+  const exerciseIds = [...new Set(rows.flatMap((row) => row.exerciseId === null ? [] : [row.exerciseId]))];
+  const previous = await getPreviousPerformanceByExercise(
+    userId,
+    first.workoutSessionId,
+    first.startedAt,
+    exerciseIds,
+    createDrizzleHistoryReadAdapter(database),
+  );
+  return mapActiveWorkoutRows(rows, previous);
 }
